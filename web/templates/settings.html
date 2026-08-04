@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Backlogia</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(13, 13, 26, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .nav-link.random {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link.random:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .section-icon.display { background: #667eea; }
+        .section-icon.steam { background: #1b2838; }
+        .section-icon.igdb { background: #9147ff; }
+        .section-icon.itch { background: #fa5c5c; }
+        .section-icon.epic { background: #0078f2; }
+        .section-icon.gog { background: #86328a; }
+        .section-icon.humble { background: #cc3333; }
+        .section-icon.battlenet { background: #00aeff; }
+        .section-icon.amazon { background: #ff9900; }
+        .section-icon.ea { background: #ff4747; }
+        .section-icon.xbox { background: #107C10; }
+        .section-icon.ubisoft { background: #0070ff; }
+        .section-icon.sync { background: #4caf50; }
+
+        /* Collapsible Sections */
+        .collapsible-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .collapsible-header .section-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .collapsible-header .header-text {
+            flex: 1;
+        }
+
+        .collapsible-header .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .collapsible-header .section-description {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .collapsible-toggle {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            transition: transform 0.3s;
+        }
+
+        .collapsible-header.expanded .collapsible-toggle {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 800px;
+        }
+
+        .collapsible-content-inner {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .collapsible-content-inner .form-group:first-child {
+            margin-top: 20px;
+        }
+
+        /* Platform Presets */
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(90deg, #4caf50, #2e7d32);
+        }
+
+        .instructions-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 12px;
+        }
+
+        .instructions-box ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #ccc;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .instructions-box code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .section-description {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 1rem;
+            font-family: monospace;
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 6px;
+        }
+
+        .help-text a {
+            color: #667eea;
+        }
+
+        /* Auth Status */
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.checking {
+            background: #ffa500;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.authenticated {
+            background: #4caf50;
+        }
+
+        .status-indicator.not-authenticated {
+            background: #f44336;
+        }
+
+        .status-indicator.not-installed {
+            background: #888;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            color: #e4e4e4;
+            font-size: 0.9rem;
+        }
+
+        /* Epic Auth Steps */
+        .epic-auth-steps {
+            margin-top: 12px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #667eea;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .step-text code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .auth-code-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .auth-code-input input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e4;
+            font-size: 0.9rem;
+        }
+
+        .auth-code-input input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-text {
+            color: #f44336;
+            font-size: 0.85rem;
+        }
+
+        .success-text {
+            color: #4caf50;
+            font-size: 0.85rem;
+        }
+
+        /* Box Art Size */
+        .size-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .size-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .size-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .size-btn.active {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Sync Buttons Grid */
+        .sync-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .sync-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e4e4e4;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+        }
+
+        .sync-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .sync-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .sync-btn .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .sync-btn .icon img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .sync-btn .icon.all { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .sync-btn .icon.igdb { background: #9147ff; }
+        .sync-btn .icon.metacritic { background: #ffcc34; color: #000; }
+        .sync-btn .icon.protondb { background: #7e57c2; }
+        .sync-btn .icon.steamgriddb { background: #00bcd4; }
+        
+        .sync-btn .text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sync-btn .text small {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .sync-section {
+            margin-bottom: 20px;
+        }
+
+        .sync-section-title {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        /* Status Messages */
+        .status-message {
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.2), rgba(46, 125, 50, 0.2));
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #81c784;
+        }
+
+        .status-message.error {
+            display: block;
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.2), rgba(198, 40, 40, 0.2));
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #e57373;
+        }
+
+        .status-message.loading {
+            display: block;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #9fa8da;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Job Progress Styles */
+        .job-progress-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .job-progress-panel.hidden {
+            display: none;
+        }
+
+        .job-progress-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .job-progress-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .job-progress-title h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e4e4e4;
+            margin: 0;
+        }
+
+        .job-progress-info {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .job-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .job-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .job-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-item-type {
+            font-weight: 600;
+            color: #e4e4e4;
+        }
+
+        .job-item-status {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .job-item-status.running {
+            background: rgba(102, 126, 234, 0.3);
+            color: #9fa8da;
+        }
+
+        .job-item-status.completed {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81c784;
+        }
+
+        .job-item-status.failed {
+            background: rgba(244, 67, 54, 0.3);
+            color: #e57373;
+        }
+
+        .job-item-status.pending {
+            background: rgba(255, 165, 0, 0.3);
+            color: #ffcc80;
+        }
+
+        .job-dismiss-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 1.1rem;
+            line-height: 1;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-left: 10px;
+        }
+
+        .job-dismiss-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+        }
+
+        .job-progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .job-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .job-progress-fill.completed {
+            background: linear-gradient(90deg, #4caf50, #2e7d32);
+        }
+
+        .job-progress-fill.failed {
+            background: linear-gradient(90deg, #f44336, #c62828);
+        }
+
+        .job-item-message {
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .job-item-message.error {
+            color: #e57373;
+        }
+
+        .leave-page-notice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #9fa8da;
+        }
+
+        .leave-page-notice svg {
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            .settings-panel {
+                padding: 20px;
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+            .btn {
+                text-align: center;
+                justify-content: center;
+            }
+
+            .size-options {
+                flex-direction: row;
+            }
+
+            .sync-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/" class="nav-brand">Backlogia</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Discover</a>
+            <a href="/library" class="nav-link">Library</a>
+            <a href="/collections" class="nav-link">Collections</a>
+            <a href="/random" class="nav-link random">Random</a>
+            <a href="/settings" class="nav-link active">Settings</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Settings</h1>
+        </header>
+
+        <div id="status-message" class="status-message"></div>
+
+        {% if success %}
+        <div class="status-message success">
+            Settings saved successfully!
+        </div>
+        {% endif %}
+
+        <!-- Job Progress Panel -->
+        <div id="job-progress-panel" class="job-progress-panel hidden">
+            <div class="job-progress-header">
+                <div class="job-progress-title">
+                    <span class="spinner"></span>
+                    <h3>Sync in Progress</h3>
+                </div>
+                <span class="job-progress-info">Updates every 2 seconds</span>
+            </div>
+            <div id="job-list"></div>
+            <div class="leave-page-notice">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>You can safely leave this page. Progress will continue in the background and will be shown when you return.</span>
+            </div>
+        </div>
+
+        {% if auth_enabled %}
+        <!-- Authentication -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon" style="background: #667eea;">A</div>
+                <div>
+                    <div class="section-title">Authentication</div>
+                    <div class="section-description">Manage your login session</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <p style="margin-bottom: 15px; color: #ccc;">Logged in as <strong>{{ request.state.user.username }}</strong></p>
+                <form method="POST" action="/auth/logout">
+                    <button type="submit" class="btn btn-secondary" style="width: fit-content;">Logout</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tools -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon" style="background: linear-gradient(90deg, #667eea, #764ba2);">B</div>
+                <div>
+                    <div class="section-title">Backlogia Bookmarklet</div>
+                    <div class="section-description">Browser tool for extracting IDs and importing games</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Installation</label>
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                    <a href="javascript:void(0);" id="backlogia-bookmarklet" class="btn btn-primary" style="cursor: grab; text-decoration: none;" onclick="bookmarkletClickHandler(event)">
+                        Backlogia Helper
+                    </a>
+                    <span style="color: #888; font-size: 0.85rem;">Drag this to your bookmarks bar</span>
+                </div>
+                <p style="margin-top: 12px; color: #888; font-size: 0.85rem;">
+                    Used by Steam, EA, and Ubisoft to extract credentials and import games. See each provider section below for instructions.
+                </p>
+            </div>
+        </div>
+
+        <!-- Display Settings -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon display">D</div>
+                <div>
+                    <div class="section-title">Display</div>
+                    <div class="section-description">Customize how games are displayed</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Box Art Size</label>
+                <div class="size-options">
+                    <button class="size-btn" data-size="small" onclick="setGridSize('small')">Small</button>
+                    <button class="size-btn" data-size="medium" onclick="setGridSize('medium')">Medium</button>
+                    <button class="size-btn" data-size="large" onclick="setGridSize('large')">Large</button>
+                </div>
+            </div>
+
+            {% if hidden_count %}
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Hidden Games</label>
+                <a href="/hidden" class="btn btn-secondary" style="width: fit-content;">
+                    View {{ hidden_count }} Hidden Game{% if hidden_count != 1 %}s{% endif %}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sync Operations -->
+        <div class="settings-panel">
+            <div class="section-header">
+                <div class="section-icon sync">S</div>
+                <div>
+                    <div class="section-title">Library Sync</div>
+                    <div class="section-description">Sync games from your stores and fetch metadata</div>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Sync Games from Stores</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncStore('steam')">
+                        <div class="icon"><img src="/static/images/steam-100.png" alt="Steam"></div>
+                        <div class="text">
+                            <span>Sync Steam</span>
+                            <small>Import from Steam library</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('epic')">
+                        <div class="icon"><img src="/static/images/epic-100.png" alt="Epic"></div>
+                        <div class="text">
+                            <span>Sync Epic</span>
+                            <small>Import from Epic Games</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('gog')">
+                        <div class="icon"><img src="/static/images/gog-48.png" alt="GOG"></div>
+                        <div class="text">
+                            <span>Sync GOG</span>
+                            <small>Import from GOG Galaxy</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('itch')">
+                        <div class="icon"><img src="/static/images/itch-90.png" alt="itch.io"></div>
+                        <div class="text">
+                            <span>Sync itch.io</span>
+                            <small>Import from itch.io</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('humble')">
+                        <div class="icon"><img src="/static/images/humble-96.png" alt="Humble"></div>
+                        <div class="text">
+                            <span>Sync Humble</span>
+                            <small>Import from Humble Bundle</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('battlenet')">
+                        <div class="icon"><img src="/static/images/battlenet-100.png" alt="Battle.net"></div>
+                        <div class="text">
+                            <span>Sync Battle.net</span>
+                            <small>Import from Battle.net</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('amazon')">
+                        <div class="icon"><img src="/static/images/amazon-120.png" alt="Amazon"></div>
+                        <div class="text">
+                            <span>Sync Amazon</span>
+                            <small>Import from Amazon Games</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('ea')">
+                        <div class="icon"><img src="/static/images/ea-256.png" alt="EA"></div>
+                        <div class="text">
+                            <span>Sync EA</span>
+                            <small>Import from EA App</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('xbox')">
+                        <div class="icon"><img src="/static/images/xbox-100.png" alt="Xbox"></div>
+                        <div class="text">
+                            <span>Sync Xbox</span>
+                            <small>Import from Xbox/Game Pass</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncStore('local')">
+                        <div class="icon"><img src="/static/images/local-96.png" alt="Local"></div>
+                        <div class="text">
+                            <span>Sync Local</span>
+                            <small>Import from local folders</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Bulk Operations</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncStore('all')">
+                        <div class="icon all">A</div>
+                        <div class="text">
+                            <span>Sync All Stores</span>
+                            <small>Import from all configured stores</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">IGDB Metadata</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncIgdb('missing')">
+                        <div class="icon igdb">I</div>
+                        <div class="text">
+                            <span>Sync Missing Metadata</span>
+                            <small>Fetch IGDB data for unmatched games</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncIgdb('all')">
+                        <div class="icon igdb">I</div>
+                        <div class="text">
+                            <span>Resync All Metadata</span>
+                            <small>Re-fetch IGDB data for all games</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">Metacritic Scores</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncMetacritic('missing')">
+                        <div class="icon metacritic">M</div>
+                        <div class="text">
+                            <span>Sync Missing Scores</span>
+                            <small>Fetch scores for unmatched games</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncMetacritic('all')">
+                        <div class="icon metacritic">M</div>
+                        <div class="text">
+                            <span>Resync All Scores</span>
+                            <small>Re-fetch scores for all games</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">ProtonDB Compatibility (Linux/Steam Deck)</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncProtondb('missing')">
+                        <div class="icon protondb">P</div>
+                        <div class="text">
+                            <span>Sync Missing Data</span>
+                            <small>Fetch compatibility for games with Steam IDs</small>
+                        </div>
+                    </button>
+                    <button class="sync-btn" onclick="syncProtondb('all')">
+                        <div class="icon protondb">P</div>
+                        <div class="text">
+                            <span>Resync All</span>
+                            <small>Re-fetch for all games (Steam + IGDB matched)</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <div class="sync-section-title">SteamGridDB Covers</div>
+                <div class="sync-grid">
+                    <button class="sync-btn" onclick="syncSteamGridDB('missing')">
+                        <div class="icon steamgriddb">G</div>
+                        <div class="text">
+                            <span>Sync Missing Covers</span>
+                            <small>Download portrait covers for Steam games</small>
+                        </div>
+                    </button>
+            
+                    <button class="sync-btn" onclick="syncSteamGridDB('all')">
+                        <div class="icon steamgriddb">G</div>
+                        <div class="text">
+                            <span>Resync All Covers</span>
+                            <small>Re-download covers for all Steam games</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Provider Settings -->
+        <form method="POST" action="/settings">
+            <div class="settings-panel" style="padding: 20px;">
+                <div class="section-header" style="margin-bottom: 15px;">
+                    <div class="section-icon display">P</div>
+                    <div>
+                        <div class="section-title">Provider Settings</div>
+                        <div class="section-description">Configure your game library connections</div>
+                    </div>
+                </div>
+
+                <!-- IGDB -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon igdb">I</div>
+                        <div class="header-text">
+                            <div class="section-title">IGDB</div>
+                            <div class="section-description">Fetch game ratings and metadata</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="igdb_client_id">IGDB Client ID</label>
+                                <input type="text" id="igdb_client_id" name="igdb_client_id"
+                                       value="{{ settings.igdb_client_id }}"
+                                       placeholder="Your Twitch/IGDB Client ID">
+                                <div class="help-text">
+                                    Register at <a href="https://dev.twitch.tv/console/apps" target="_blank">dev.twitch.tv/console/apps</a>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="igdb_client_secret">IGDB Client Secret</label>
+                                <input type="password" id="igdb_client_secret" name="igdb_client_secret"
+                                       value="{{ settings.igdb_client_secret }}"
+                                       placeholder="Your Twitch/IGDB Client Secret">
+                            </div>
+                            <div class="form-group">
+                                <label for="igdb_match_threshold">Match Confidence Threshold</label>
+                                <input type="number" id="igdb_match_threshold" name="igdb_match_threshold"
+                                       value="{{ settings.igdb_match_threshold }}"
+                                       placeholder="50" min="0" max="100" step="1">
+                                <div class="help-text">
+                                    Minimum score (0-100) required to match a game to IGDB. Lower values match more games but may be less accurate.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Steam -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon steam">S</div>
+                        <div class="header-text">
+                            <div class="section-title">Steam</div>
+                            <div class="section-description">Connect to your Steam library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="steam_id">Steam ID (64-bit)</label>
+                                <input type="text" id="steam_id" name="steam_id"
+                                       value="{{ settings.steam_id }}"
+                                       placeholder="76561198000000000">
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to get your Steam ID:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Go to your <a href="https://steamcommunity.com/my" target="_blank">Steam profile page</a></li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>Your Steam ID will appear - click to copy it</li>
+                                        <li>Paste the ID in the field above</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="steam_api_key">Steam API Key</label>
+                                <input type="password" id="steam_api_key" name="steam_api_key"
+                                       value="{{ settings.steam_api_key }}"
+                                       placeholder="Your Steam API key">
+                                <div class="help-text">
+                                    Get your API key at <a href="https://steamcommunity.com/dev/apikey" target="_blank">steamcommunity.com/dev/apikey</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GOG -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon gog">G</div>
+                        <div class="header-text">
+                            <div class="section-title">GOG</div>
+                            <div class="section-description">Import from GOG Galaxy or browser</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <!-- Option 1: GOG Galaxy Database -->
+                            <div class="method-section" style="margin-bottom: 20px;">
+                                <h4 style="color: #86328a; margin-bottom: 12px; font-size: 0.95rem;">Option 1: GOG Galaxy Database</h4>
+                                <div class="instructions-box" style="margin-bottom: 12px;">
+                                    <p style="color: #888; font-size: 0.85rem;">
+                                        Requires GOG Galaxy to be installed locally. Set the database path in your project's <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">.env</code> file.
+                                    </p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="gog_db_path">GOG Galaxy Database Path</label>
+                                    <input type="text" id="gog_db_path" name="gog_db_path"
+                                           value="{{ settings.gog_db_path }}"
+                                           placeholder="Path to galaxy-2.0.db">
+                                    <div class="help-text">Location of the GOG Galaxy database file</div>
+                                    <div class="preset-buttons">
+                                        <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'windows')">Windows</button>
+                                        <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'mac')">macOS</button>
+                                        <button type="button" class="preset-btn" onclick="setPreset('gog_db_path', 'linux')">Linux</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Option 2: Bookmarklet -->
+                            <div class="method-section">
+                                <h4 style="color: #86328a; margin-bottom: 12px; font-size: 0.95rem;">Option 2: Browser Bookmarklet</h4>
+                                <div class="instructions-box">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to import your GOG games:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Log in to <a href="https://www.gog.com" target="_blank">gog.com</a></li>
+                                        <li>Go to <a href="https://www.gog.com/feed" target="_blank">gog.com/feed</a> and click the <strong>Games</strong> tab</li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>Wait while it scrolls to load all games and fetches details</li>
+                                    </ol>
+                                    <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                        The bookmarklet will guide you if you're not on the correct page.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Epic -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon epic">E</div>
+                        <div class="header-text">
+                            <div class="section-title">Epic Games</div>
+                            <div class="section-description">Import from Epic Games</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label>Authentication Status</label>
+                                <div id="epic-auth-status" class="auth-status">
+                                    <span class="status-indicator checking"></span>
+                                    <span class="status-text">Checking...</span>
+                                </div>
+                            </div>
+
+                            <!-- <div class="form-group">
+                                <label>Legendary CLI Setup</label>
+                                <div class="help-text">
+                                    Epic Games sync uses <a href="https://github.com/derrod/legendary" target="_blank">Legendary</a>, an open-source Epic Games Launcher replacement.
+                                </div>
+                                <div class="help-text" style="margin-top: 8px;">
+                                    Install: <code>pip install legendary-gl</code> or <code>brew install legendary</code>
+                                </div>
+                            </div> -->
+
+                            <!-- Authentication UI -->
+                            <div id="epic-auth-ui" class="form-group" style="display: none;">
+                                <label>Authenticate with Epic Games</label>
+                                <div class="epic-auth-steps">
+                                    <div class="step-item">
+                                        <span class="step-number">1</span>
+                                        <span class="step-text">Click the button below to open the Epic login page</span>
+                                    </div>
+                                    <div class="step-item">
+                                        <span class="step-number">2</span>
+                                        <span class="step-text">Log in to your Epic Games account</span>
+                                    </div>
+                                    <div class="step-item">
+                                        <span class="step-number">3</span>
+                                        <span class="step-text">Copy the <code>authorizationCode</code> value from the JSON response</span>
+                                    </div>
+                                    <div class="step-item">
+                                        <span class="step-number">4</span>
+                                        <span class="step-text">Paste the code below and click "Submit Code"</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <a href="https://legendary.gl/epiclogin" target="_blank" class="btn btn-secondary" style="margin-bottom: 12px;">
+                                        Open Epic Login Page
+                                    </a>
+                                </div>
+                                <div class="auth-code-input">
+                                    <input type="text" id="epic-auth-code" placeholder="Paste authorization code here" style="flex: 1;">
+                                    <button type="button" class="btn btn-primary" onclick="submitEpicAuthCode()">Submit Code</button>
+                                </div>
+                                <div id="epic-auth-error" class="error-text" style="display: none; margin-top: 8px;"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <button type="button" id="epic-auth-btn" class="btn btn-secondary" onclick="startEpicAuth()" style="display: none;">
+                                    Authenticate
+                                </button>
+                                <button type="button" id="epic-check-btn" class="btn btn-secondary" onclick="checkEpicStatus()" style="margin-left: 8px;">
+                                    Refresh Status
+                                </button>
+                            </div>
+
+                            <div class="help-text" style="margin-top: 12px;">
+                                Legendary stores credentials securely. You only need to authenticate once.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- itch.io -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon itch">i</div>
+                        <div class="header-text">
+                            <div class="section-title">itch.io</div>
+                            <div class="section-description">Connect to your itch.io library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="itch_api_key">itch.io API Key</label>
+                                <input type="password" id="itch_api_key" name="itch_api_key"
+                                       value="{{ settings.itch_api_key }}"
+                                       placeholder="Your itch.io API key">
+                                <div class="help-text">
+                                    Get your API key at <a href="https://itch.io/user/settings/api-keys" target="_blank">itch.io/user/settings/api-keys</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Humble Bundle -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon humble">H</div>
+                        <div class="header-text">
+                            <div class="section-title">Humble Bundle</div>
+                            <div class="section-description">Connect to your Humble Bundle library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="humble_session_cookie">Humble Bundle Session Cookie</label>
+                                <input type="password" id="humble_session_cookie" name="humble_session_cookie"
+                                       value="{{ settings.humble_session_cookie }}"
+                                       placeholder="_simpleauth_sess cookie value">
+                                <div class="help-text">
+                                    To get this cookie: Log in to <a href="https://www.humblebundle.com" target="_blank">humblebundle.com</a>,
+                                    open Developer Tools (F12) → Application → Cookies → find <code>_simpleauth_sess</code> and copy its value
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battle.net -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon battlenet">B</div>
+                        <div class="header-text">
+                            <div class="section-title">Battle.net</div>
+                            <div class="section-description">Connect to your Battle.net library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="battlenet_session_cookie">Battle.net Cookies</label>
+                                <input type="password" id="battlenet_session_cookie" name="battlenet_session_cookie"
+                                       value="{{ settings.battlenet_session_cookie }}"
+                                       placeholder="Paste cookies from account.battle.net">
+                                <div class="instructions-box">
+                                    <ol>
+                                        <li>Log in to <a href="https://account.battle.net" target="_blank">account.battle.net</a></li>
+                                        <li>Open Developer Tools (<code>F12</code>) and go to the <strong>Network</strong> tab</li>
+                                        <li>Refresh the page</li>
+                                        <li>Click on any request to <code>account.battle.net</code></li>
+                                        <li>In Request Headers, find <strong>Cookie</strong> and copy the entire value</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amazon Games -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon amazon">A</div>
+                        <div class="header-text">
+                            <div class="section-title">Amazon Games</div>
+                            <div class="section-description">Connect to your Amazon Games library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label>Amazon Authentication</label>
+                                <div id="amazon-auth-status" class="auth-status">Checking status...</div>
+                                <div id="amazon-auth-actions" style="margin-top: 10px;">
+                                    <button type="button" class="btn btn-primary" id="amazon-auth-btn" onclick="startAmazonAuth()">
+                                        Authenticate with Amazon
+                                    </button>
+                                </div>
+                                <div id="amazon-auth-flow" style="display: none; margin-top: 15px;">
+                                    <div class="instructions-box">
+                                        <ol>
+                                            <li>A popup has just been opened for Amazon login</li>
+                                            <li>Log in to your Amazon account</li>
+                                            <li>After login, you will be redirected to the main Amazon website</li>
+                                            <li>Copy the <strong>entire URL</strong> from your browser's address bar</li>
+                                            <li>Paste it below and click "Complete Authentication"</li>
+                                        </ol>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 15px;">
+                                        <label for="amazon_auth_code">Redirect URL or Authorization Code</label>
+                                        <input type="text" id="amazon_auth_code" placeholder="Paste the full URL from your browser">
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="completeAmazonAuth()">
+                                        Complete Authentication
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="cancelAmazonAuth()">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EA -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon ea">E</div>
+                        <div class="header-text">
+                            <div class="section-title">EA</div>
+                            <div class="section-description">Connect to your EA App library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="ea_bearer_token">EA Bearer Token</label>
+                                <input type="password" id="ea_bearer_token" name="ea_bearer_token"
+                                       value="{{ settings.ea_bearer_token }}"
+                                       placeholder="Paste your EA bearer token here">
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to get your EA token:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Log in to <a href="https://www.ea.com" target="_blank">ea.com</a></li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>Your token will appear - click to copy it</li>
+                                        <li>Paste the token in the field above</li>
+                                    </ol>
+                                    <p style="margin-top: 10px; color: #f0ad4e; font-size: 0.8rem;">
+                                        <strong>Note:</strong> Tokens expire after ~1 hour. If sync fails, get a new token.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Xbox -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon xbox">X</div>
+                        <div class="header-text">
+                            <div class="section-title">Xbox</div>
+                            <div class="section-description">Connect to your Xbox library and Game Pass</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="xbox_xsts_token">Xbox XSTS Token</label>
+                                <input type="password" id="xbox_xsts_token" name="xbox_xsts_token"
+                                       value="{{ settings.xbox_xsts_token }}"
+                                       placeholder="Paste your Xbox XSTS token">
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to get your Xbox token:</p>
+                                    <ol>
+                                        <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                        <li>Sign in to <a href="https://www.xbox.com" target="_blank">xbox.com</a></li>
+                                        <li>Navigate to <a href="https://www.xbox.com/en-US/play" target="_blank">Xbox Cloud Gaming</a></li>
+                                        <li>Click the bookmarklet in your bookmarks bar</li>
+                                        <li>If a token is found, click to copy it. Otherwise, follow the manual instructions shown.</li>
+                                    </ol>
+                                    <p style="margin-top: 10px; color: #f0ad4e; font-size: 0.8rem;">
+                                        <strong>Note:</strong> Tokens expire. If sync fails, get a new token.
+                                    </p>
+                                    <p style="margin-top: 8px; color: #888; font-size: 0.8rem;">
+                                        Game Pass catalog is public and will sync without a token. Token is only needed for your owned games.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ubisoft -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon ubisoft">U</div>
+                        <div class="header-text">
+                            <div class="section-title">Ubisoft</div>
+                            <div class="section-description">Import your Ubisoft Connect library</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="instructions-box">
+                                <p style="margin-bottom: 8px; color: #e4e4e4;">Use the <strong>Backlogia Helper</strong> bookmarklet to import your Ubisoft games:</p>
+                                <ol>
+                                    <li>Install the bookmarklet from the top of this page (drag to bookmarks bar)</li>
+                                    <li>Log in to <a href="https://account.ubisoft.com" target="_blank">account.ubisoft.com</a></li>
+                                    <li>Navigate to your <a href="https://account.ubisoft.com/en-US/games-activity" target="_blank">Games Activity</a> page</li>
+                                    <li>Click the bookmarklet in your bookmarks bar</li>
+                                    <li>Wait while it expands all sections and imports your games</li>
+                                </ol>
+                                <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                    The bookmarklet will show a progress overlay and confirm when import is complete.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Local Games -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon" style="background: #6b8e23;">L</div>
+                        <div class="header-text">
+                            <div class="section-title">Local Games</div>
+                            <div class="section-description">Import games from local folders</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            {% if is_docker %}
+                                <!-- Docker mode: Read-only display with instructions -->
+                            <div class="form-group">
+                                <label>Configured Paths</label>
+                                {% if settings.local_games_paths %}
+                                <div style="background: rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; margin-top: 8px;">
+                                    {% for path in settings.local_games_paths.split(',') %}
+                                    {% if path.strip() %}
+                                    <div style="color: #4caf50; font-family: monospace; font-size: 0.9rem; padding: 4px 0;">
+                                        {{ path.strip() }}
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div style="color: #888; font-size: 0.9rem; margin-top: 8px;">
+                                    No local game paths configured
+                                </div>
+                                {% endif %}
+                                <div class="help-text" style="margin-top: 10px;">
+                                    Configure paths in your <code>.env</code> file using <code>LOCAL_GAMES_DIR_1</code>, <code>LOCAL_GAMES_DIR_2</code>, etc.
+                                </div>
+                            </div>
+                            <div class="instructions-box">
+                                <p style="margin-bottom: 8px; color: #e4e4e4;"><strong>Setup (in .env file):</strong></p>
+                                <pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 8px; color: #ccc; font-size: 0.8rem; overflow-x: auto;">LOCAL_GAMES_DIR_1=/path/to/games
+LOCAL_GAMES_DIR_2=/another/path/to/games</pre>
+                                <p style="margin-top: 12px; color: #e4e4e4;"><strong>How it works:</strong></p>
+                                <ol>
+                                    <li>Set paths in your <code>.env</code> file and restart the container</li>
+                                    <li>Each subfolder in those paths is treated as a game</li>
+                                    <li>Games are matched to IGDB by folder name for metadata</li>
+                                </ol>
+                                <p style="margin-top: 12px; color: #e4e4e4;"><strong>game.json override (optional):</strong></p>
+                                <pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 8px; color: #ccc; font-size: 0.8rem; overflow-x: auto;">{
+  "name": "Actual Game Name",
+  "igdb_id": 12345
+}</pre>
+                                <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                    Place <code>game.json</code> inside any game folder to override the detected name or specify an IGDB ID.
+                                </p>
+                            </div>
+                            {% else %}
+                                <!-- Non-Docker mode: Editable input field -->
+                                <div class="form-group">
+                                    <label for="local_games_paths">Game Folder Paths (comma-separated)</label>
+                                    <input
+                                        type="text"
+                                        id="local_games_paths"
+                                        name="local_games_paths"
+                                        value="{{ settings.local_games_paths }}"
+                                        placeholder="D:\Games,E:\More Games"
+                                        style="font-family: monospace;"
+                                    >
+                                    <div class="help-text">
+                                        Enter one or more folder paths separated by commas. Each subfolder will be treated as a game.
+                                        <br>
+                                        Example: <code>D:\Games,E:\Steam Library</code>
+                                    </div>
+                                </div>
+                                <div class="instructions-box">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;"><strong>How it works:</strong></p>
+                                    <ol>
+                                        <li>Enter your game folder paths above (comma-separated)</li>
+                                        <li>Each subfolder in those paths is treated as a game</li>
+                                        <li>Games are matched to IGDB by folder name for metadata</li>
+                                        <li>Click "Save Settings" then sync via the "Sync Local" button</li>
+                                    </ol>
+                                    <p style="margin-top: 12px; color: #e4e4e4;"><strong>game.json override (optional):</strong></p>
+                                    <pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 8px; color: #ccc; font-size: 0.8rem; overflow-x: auto;">{
+  "name": "Actual Game Name",
+  "igdb_id": 12345
+}</pre>
+                                    <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
+                                        Place <code>game.json</code> inside any game folder to override the detected name or specify an IGDB ID.
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                    <a href="/" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Box Art Size
+        function setGridSize(size) {
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.size === size) {
+                    btn.classList.add('active');
+                }
+            });
+            localStorage.setItem('gridSize', size);
+        }
+
+        // Load saved preference on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedSize = localStorage.getItem('gridSize') || 'medium';
+            setGridSize(savedSize);
+        });
+
+        // Status Message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + type;
+        }
+
+        function clearStatus() {
+            const statusEl = document.getElementById('status-message');
+            statusEl.className = 'status-message';
+            statusEl.textContent = '';
+        }
+
+        // Job Progress Tracking
+        let jobPollingInterval = null;
+        let dismissedJobs = JSON.parse(localStorage.getItem('dismissedJobs') || '[]');
+
+        function getJobTypeLabel(type) {
+            const labels = {
+                'store_sync': 'Store Sync',
+                'igdb_sync': 'IGDB Metadata Sync',
+                'metacritic_sync': 'Metacritic Scores Sync'
+            };
+            return labels[type] || type;
+        }
+
+        function dismissJob(jobId) {
+            dismissedJobs.push(jobId);
+            localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+            // Re-render the job list
+            checkActiveJobs();
+        }
+
+        function renderJobItem(job) {
+            const percentage = job.total > 0 ? Math.round((job.progress / job.total) * 100) : 0;
+            const statusClass = job.status;
+            const progressClass = job.status === 'completed' ? 'completed' : (job.status === 'failed' ? 'failed' : '');
+            const messageClass = job.status === 'failed' ? 'error' : '';
+
+            return `
+                <div class="job-item" data-job-id="${job.id}">
+                    <div class="job-item-header">
+                        <span class="job-item-type">${getJobTypeLabel(job.type)}</span>
+                        <div style="display: flex; align-items: center;">
+                            <span class="job-item-status ${statusClass}">${job.status}</span>
+                            <button class="job-dismiss-btn" onclick="dismissJob('${job.id}')" title="Dismiss">&times;</button>
+                        </div>
+                    </div>
+                    <div class="job-progress-bar">
+                        <div class="job-progress-fill ${progressClass}" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="job-item-message ${messageClass}">
+                        ${job.error || job.message || 'Starting...'}
+                        ${job.total > 0 ? ` (${job.progress}/${job.total})` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateJobProgressPanel(jobs) {
+            const panel = document.getElementById('job-progress-panel');
+            const jobList = document.getElementById('job-list');
+
+            // Filter out dismissed jobs and old completed jobs
+            const now = Date.now();
+            const relevantJobs = jobs.filter(job => {
+                // Skip dismissed jobs
+                if (dismissedJobs.includes(job.id)) return false;
+
+                // Always show active jobs
+                if (job.status === 'pending' || job.status === 'running') return true;
+
+                // For completed/failed jobs, show for 60 seconds after completion
+                if (job.completed_at) {
+                    // Parse the ISO timestamp - handle both with and without timezone
+                    const completedAt = new Date(job.completed_at);
+                    const elapsed = now - completedAt.getTime();
+                    return elapsed < 60000; // Show for 60 seconds
+                }
+                return false;
+            });
+
+            if (relevantJobs.length === 0) {
+                panel.classList.add('hidden');
+                stopJobPolling();
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            jobList.innerHTML = relevantJobs.map(renderJobItem).join('');
+
+            // Update panel header based on job states
+            const hasRunning = relevantJobs.some(j => j.status === 'running' || j.status === 'pending');
+            const spinner = panel.querySelector('.job-progress-title .spinner');
+            const title = panel.querySelector('.job-progress-title h3');
+            const notice = panel.querySelector('.leave-page-notice');
+
+            if (hasRunning) {
+                spinner.style.display = 'inline-block';
+                title.textContent = 'Sync in Progress';
+                if (notice) notice.style.display = 'flex';
+            } else {
+                spinner.style.display = 'none';
+                title.textContent = 'Sync Complete';
+                if (notice) notice.style.display = 'none';
+            }
+        }
+
+        // Clean up old dismissed job IDs (keep only last 50)
+        function cleanupDismissedJobs() {
+            if (dismissedJobs.length > 50) {
+                dismissedJobs = dismissedJobs.slice(-50);
+                localStorage.setItem('dismissedJobs', JSON.stringify(dismissedJobs));
+            }
+        }
+
+        function checkActiveJobs() {
+            fetch('/api/jobs')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.jobs) {
+                    updateJobProgressPanel(data.jobs);
+
+                    // Check if there are jobs that need tracking (active or recently completed)
+                    const now = Date.now();
+                    const hasRelevantJobs = data.jobs.some(j => {
+                        if (dismissedJobs.includes(j.id)) return false;
+                        if (j.status === 'pending' || j.status === 'running') return true;
+                        if (j.completed_at) {
+                            const completedAt = new Date(j.completed_at);
+                            return (now - completedAt.getTime()) < 60000;
+                        }
+                        return false;
+                    });
+
+                    // Start/continue polling if there are relevant jobs
+                    if (hasRelevantJobs && !jobPollingInterval) {
+                        startJobPolling();
+                    } else if (!hasRelevantJobs && jobPollingInterval) {
+                        stopJobPolling();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking jobs:', error);
+            });
+        }
+
+        function startJobPolling() {
+            if (jobPollingInterval) return;
+            jobPollingInterval = setInterval(checkActiveJobs, 2000);
+        }
+
+        function stopJobPolling() {
+            if (jobPollingInterval) {
+                clearInterval(jobPollingInterval);
+                jobPollingInterval = null;
+            }
+        }
+
+        // Sync Store (async with job tracking)
+        function syncStore(store) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/store/${store}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    // Start polling for job updates
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync IGDB (async with job tracking)
+        function syncIgdb(mode) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/igdb/${mode}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync Metacritic (async with job tracking)
+        function syncMetacritic(mode) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/metacritic/${mode}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.detail || data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync ProtonDB (async with job tracking)
+        function syncProtondb(mode) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/protondb/${mode}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.detail || data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Sync SteamGridDB (async with job tracking)
+        function syncSteamGridDB(mode) {
+            const btn = event.target.closest('.sync-btn');
+            btn.disabled = true;
+
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+            fetch(`/api/sync/steamgriddb/${mode}/async`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    checkActiveJobs();
+                    startJobPolling();
+                } else {
+                    showStatus(data.detail || data.error || 'Failed to start sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Epic Authentication
+        function checkEpicStatus() {
+            const statusEl = document.getElementById('epic-auth-status');
+            const indicator = statusEl.querySelector('.status-indicator');
+            const text = statusEl.querySelector('.status-text');
+            const authBtn = document.getElementById('epic-auth-btn');
+            const authUi = document.getElementById('epic-auth-ui');
+
+            indicator.className = 'status-indicator checking';
+            text.textContent = 'Checking...';
+
+            fetch('/api/epic/status')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    indicator.className = 'status-indicator not-authenticated';
+                    text.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    return;
+                }
+
+                if (!data.installed) {
+                    indicator.className = 'status-indicator not-installed';
+                    text.textContent = 'Legendary CLI not installed';
+                    authBtn.style.display = 'none';
+                    authUi.style.display = 'none';
+                } else if (data.authenticated) {
+                    indicator.className = 'status-indicator authenticated';
+                    text.textContent = 'Authenticated as ' + data.username;
+                    authBtn.style.display = 'none';
+                    authUi.style.display = 'none';
+                } else {
+                    indicator.className = 'status-indicator not-authenticated';
+                    text.textContent = data.needs_reauth ? 'Re-authentication required' : 'Not authenticated';
+                    authBtn.style.display = 'inline-flex';
+                }
+            })
+            .catch(error => {
+                indicator.className = 'status-indicator not-authenticated';
+                text.textContent = 'Error checking status';
+            });
+        }
+
+        function startEpicAuth() {
+            const authUi = document.getElementById('epic-auth-ui');
+            const authBtn = document.getElementById('epic-auth-btn');
+            authUi.style.display = 'block';
+            authBtn.style.display = 'none';
+            document.getElementById('epic-auth-code').value = '';
+            document.getElementById('epic-auth-error').style.display = 'none';
+        }
+
+        function submitEpicAuthCode() {
+            const codeInput = document.getElementById('epic-auth-code');
+            const errorEl = document.getElementById('epic-auth-error');
+            const code = codeInput.value.trim();
+
+            if (!code) {
+                errorEl.textContent = 'Please enter an authorization code';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            showStatus('Authenticating with Epic Games...', 'loading');
+
+            fetch('/api/epic/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    document.getElementById('epic-auth-ui').style.display = 'none';
+                    checkEpicStatus();
+                } else {
+                    errorEl.textContent = data.error || 'Authentication failed';
+                    errorEl.style.display = 'block';
+                    showStatus('Epic authentication failed', 'error');
+                }
+            })
+            .catch(error => {
+                errorEl.textContent = 'Network error: ' + error.message;
+                errorEl.style.display = 'block';
+                showStatus('Network error', 'error');
+            });
+        }
+
+        // Check Epic status and active jobs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkEpicStatus();
+            checkAmazonStatus();
+            // Clean up old dismissed job IDs
+            cleanupDismissedJobs();
+            // Check for active jobs and show progress if any
+            checkActiveJobs();
+        });
+
+        // Amazon Authentication
+        let amazonSessionId = null;
+
+        function checkAmazonStatus() {
+            const statusEl = document.getElementById('amazon-auth-status');
+            const authBtn = document.getElementById('amazon-auth-btn');
+
+            fetch('/api/amazon/auth/status')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.nile_installed) {
+                    statusEl.innerHTML = '<span style="color: #f44336;">Error: Nile not available, see README for instructions</span>';
+                    if (authBtn) authBtn.disabled = true;
+                } else if (data.authenticated) {
+                    statusEl.innerHTML = '<span style="color: #4caf50;">Authenticated</span>' +
+                        (data.username && data.username !== '<not logged in>' ? ` as ${data.username}` : '') +
+                        ' - Ready to sync';
+                    if (authBtn) authBtn.textContent = 'Re-authenticate';
+                } else {
+                    statusEl.innerHTML = '<span style="color: #888;">Not authenticated</span>';
+                    if (authBtn) authBtn.textContent = 'Authenticate with Amazon';
+                }
+            })
+            .catch(error => {
+                statusEl.textContent = 'Error checking status';
+            });
+        }
+
+        function startAmazonAuth() {
+            showStatus('Starting Amazon authentication...', 'loading');
+
+            fetch('/api/amazon/auth/start', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.login_url) {
+                    amazonSessionId = data.session_id;
+                    window.open(data.login_url, '_blank', 'width=500,height=700');
+                    document.getElementById('amazon-auth-flow').style.display = 'block';
+                    document.getElementById('amazon-auth-btn').style.display = 'none';
+                    showStatus('Complete the login in the popup window, then paste the redirect URL below.', 'loading');
+                } else {
+                    showStatus('Failed to start authentication: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function completeAmazonAuth() {
+            const code = document.getElementById('amazon_auth_code').value.trim();
+
+            if (!code) {
+                showStatus('Please paste the redirect URL or authorization code', 'error');
+                return;
+            }
+
+            showStatus('Completing Amazon authentication...', 'loading');
+
+            fetch('/api/amazon/auth/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code, session_id: amazonSessionId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message || 'Authentication successful!', 'success');
+                    cancelAmazonAuth();
+                    checkAmazonStatus();
+                } else {
+                    showStatus('Authentication failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function cancelAmazonAuth() {
+            document.getElementById('amazon-auth-flow').style.display = 'none';
+            document.getElementById('amazon-auth-btn').style.display = 'inline-block';
+            document.getElementById('amazon_auth_code').value = '';
+            amazonSessionId = null;
+            clearStatus();
+        }
+
+        // Collapsible sections
+        function toggleCollapsible(header) {
+            header.classList.toggle('expanded');
+            const content = header.nextElementSibling;
+            content.classList.toggle('expanded');
+        }
+
+        // Platform presets for database paths
+        const presets = {
+            gog_db_path: {
+                windows: '%PROGRAMDATA%\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db',
+                mac: '/Users/Shared/GOG.com/Galaxy/Storage/galaxy-2.0.db',
+                linux: '~/.local/share/GOG.com/Galaxy/storage/galaxy-2.0.db'
+            }
+        };
+
+        function setPreset(field, platform) {
+            const input = document.getElementById(field);
+            if (input && presets[field] && presets[field][platform]) {
+                input.value = presets[field][platform];
+            }
+        }
+
+        // Bookmarklet handler - shows alert if clicked on settings page
+        function bookmarkletClickHandler(event) {
+            event.preventDefault();
+            alert("Don't click here. Drag this to your bookmarks bar and run it from there.");
+        }
+
+        // Generate the bookmarklet code
+        // Steam and EA code runs inline (CSP blocks external scripts on those sites)
+        // Ubisoft loads external script (needs API access to Backlogia)
+        function generateBookmarkletCode(localUrl) {
+            const code = `javascript:(function(){var h=location.hostname;if(h.includes("steamcommunity.com")){try{var d=document.body.innerHTML.match(/g_rgProfileData\\s*=\\s*(\\{[^}]+\\})/);if(!d)return alert("Steam profile data not found!");var p=JSON.parse(d[1].replace(/\\\\'/g,"'"));var s=p.steamid;if(!s)return alert("Steam ID not found!");var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1b2838,#2a475e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #66c0f4;min-width:280px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#66c0f4;font-size:12px;text-transform:uppercase;letter-spacing:1px">Steam ID</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#8f98a0;cursor:pointer;font-size:18px;padding:0;line-height:1">&times;</button></div><div style="background:#171a21;padding:12px 15px;border-radius:6px;margin-bottom:15px"><code style="color:#fff;font-size:16px;font-family:monospace">'+s+'</code></div><button id=_scb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#47bfff,#1a9fff);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy to Clipboard</button><div style="margin-top:12px;padding-top:12px;border-top:1px solid #2a475e;color:#8f98a0;font-size:11px"><strong style="color:#c7d5e0">'+p.personaname+'</strong></div></div>';document.body.appendChild(o);o.querySelector("#_scb").onclick=function(){navigator.clipboard.writeText(s).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#5ba32b,#4a8c24)"}.bind(this))}}catch(e){alert("Error: "+e.message)}}else if(h.includes("ea.com")){(async function(){try{var r=await fetch("https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none",{credentials:"include"});var j=await r.json();if(j.access_token){var t=j.access_token;var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #ff4747;min-width:320px;max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#ff4747;font-size:12px;text-transform:uppercase;letter-spacing:1px">EA Bearer Token</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px">&times;</button></div><div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto"><code style="color:#e4e4e4;font-size:11px;font-family:monospace">'+t.substring(0,50)+'...</code></div><button id=_eacb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#ff4747,#cc3333);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button><div style="margin-top:12px;color:#888;font-size:11px">Token expires in ~1 hour</div></div>';document.body.appendChild(o);o.querySelector("#_eacb").onclick=function(){navigator.clipboard.writeText(t).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#4caf50,#2e7d32)"}.bind(this))}}else{alert("EA Auth Error: "+(j.error||"Not logged in"))}}catch(e){alert("Error: "+e.message)}})()}else if(h.includes("xbox.com")||h.includes("xboxlive.com")){(function(){try{var t=null;var c=document.cookie.split(";");for(var i=0;i<c.length;i++){var ck=c[i].trim();if(ck.indexOf("XBXXtk")===0){try{var v=decodeURIComponent(ck.split("=").slice(1).join("="));var j=JSON.parse(v);if(j.tokenData&&j.tokenData.token){t=j.tokenData.token;break}}catch(e){}}}if(!t){var scripts=document.querySelectorAll("script:not([src])");for(var i=0;i<scripts.length;i++){var m=scripts[i].textContent.match(/["'](XBL3\\.0\\s+x=[^"']+)["']/);if(m){t=m[1];break}}}var o=document.createElement("div");o.innerHTML='<div style="position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 25px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid #107C10;min-width:320px;max-width:400px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:#107C10;font-size:12px;text-transform:uppercase;letter-spacing:1px">Xbox Token</span><button onclick="this.closest(\\'div\\').parentElement.remove()" style="background:none;border:none;color:#888;cursor:pointer;font-size:18px">&times;</button></div><div id=__xbcontent__></div></div>';document.body.appendChild(o);var cnt=o.querySelector("#__xbcontent__");if(t){cnt.innerHTML='<div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto"><code style="color:#e4e4e4;font-size:11px;font-family:monospace">'+t.substring(0,60)+'...</code></div><button id=_xbcb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#107C10,#0e6b0e);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button><div style="margin-top:12px;color:#888;font-size:11px">Token expires periodically. Paste in Backlogia settings.</div>';o.querySelector("#_xbcb").onclick=function(){navigator.clipboard.writeText(t).then(function(){this.textContent="Copied!";this.style.background="linear-gradient(90deg,#4caf50,#2e7d32)"}.bind(this))}}else{cnt.innerHTML='<p style="color:#f0ad4e;margin-bottom:12px">Could not find token automatically.</p><p style="color:#ccc;font-size:12px">Open DevTools (F12) → Network tab, reload the page, and look for requests with Authorization header starting with XBL3.0</p>'}}catch(e){alert("Error: "+e.message)}})()}else if(h.includes("account.ubisoft.com")){window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}else{window.__BACKLOGIA_URL__="${localUrl}";var sc=document.createElement("script");sc.src="${localUrl}/static/js/bookmarklet.js?t="+Date.now();document.body.appendChild(sc)}})();`;
+            return code;
+        }
+
+        // Initialize bookmarklet on page load using current page's origin
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookmarkletLink = document.getElementById('backlogia-bookmarklet');
+            const localUrl = window.location.origin;
+
+            const code = generateBookmarkletCode(localUrl);
+            bookmarkletLink.href = code;
+        });
+    </script>
+    {% include '_footer.html' %}
+</body>
+</html>

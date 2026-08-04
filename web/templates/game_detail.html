@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ game.name }} - Backlogia</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(13, 13, 26, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .nav-link.random {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link.random:hover {
+            opacity: 0.8;
+        }
+
+        /* Add to Collection Button */
+        .add-to-collection-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-to-collection-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Collection Modal */
+        .collection-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .collection-modal-overlay.active {
+            display: flex;
+        }
+
+        .collection-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .collection-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .collection-modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .collection-modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .collection-modal-close:hover {
+            color: #e4e4e4;
+        }
+
+        .collection-list {
+            margin-bottom: 20px;
+        }
+
+        .collection-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .collection-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .collection-item.in-collection {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .collection-item.in-collection .collection-checkbox {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .collection-checkbox-icon {
+            color: white;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .collection-item.in-collection .collection-checkbox-icon {
+            display: block;
+        }
+
+        .collection-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .collection-item-name {
+            font-weight: 500;
+            color: #e4e4e4;
+        }
+
+        .collection-item-count {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .collection-empty {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+
+        .collection-create-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .collection-create-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #667eea;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .collection-create-toggle:hover {
+            color: #764ba2;
+        }
+
+        .collection-create-form {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .collection-create-form.active {
+            display: block;
+        }
+
+        .collection-create-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+        }
+
+        .collection-create-input::placeholder {
+            color: #666;
+        }
+
+        .collection-create-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-create-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .collection-create-btn:hover {
+            opacity: 0.9;
+        }
+
+        .collection-create-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .collection-status {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .collection-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .collection-status.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .hero {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(20px) brightness(0.4);
+            transform: scale(1.1);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            gap: 40px;
+            height: 100%;
+            align-items: flex-end;
+        }
+
+        .hero-cover {
+            width: 200px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+        }
+
+        .hero-cover-placeholder {
+            width: 200px;
+            height: 300px;
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3e 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #444;
+            flex-shrink: 0;
+        }
+
+        .hero-info {
+            padding-bottom: 20px;
+        }
+
+        .hero-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .store-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .store-badge.steam {
+            background: #1b2838;
+            color: #66c0f4;
+        }
+
+        .store-badge.epic {
+            background: #0078f2;
+            color: white;
+        }
+
+        .store-badge.gog {
+            background: #86328a;
+            color: white;
+        }
+
+        .store-badge.itch {
+            background: #fa5c5c;
+            color: white;
+        }
+
+        .store-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .store-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .store-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .store-link-icon {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .store-link-info {
+            flex: 1;
+        }
+
+        .store-link-name {
+            font-weight: 600;
+            color: #e4e4e4;
+            text-transform: capitalize;
+        }
+
+        .store-link-meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .store-link-arrow {
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .owned-stores-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .description {
+            line-height: 1.7;
+            color: #ccc;
+        }
+
+        .description img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .description a {
+            color: #667eea;
+        }
+
+        .description b, .description strong {
+            color: #e4e4e4;
+        }
+
+        .description hr {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+
+        .description video {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Hide GOG promo banners */
+        .description [id^="test"] {
+            display: none !important;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 5px 12px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: #667eea;
+        }
+
+        .info-list {
+            list-style: none;
+        }
+
+        .info-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #e4e4e4;
+            text-align: right;
+        }
+
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .score-badge.good {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+        }
+
+        .score-badge.mixed {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .score-badge.bad {
+            background: linear-gradient(135deg, #f44336, #c62828);
+        }
+
+        .ratings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+
+        .rating-item {
+            padding: 10px 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+
+        .rating-item .score {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .rating-item.total { background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)); }
+        .rating-item.total .score { color: #667eea; }
+
+        .rating-item.user { background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(21, 101, 192, 0.15)); }
+        .rating-item.user .score { color: #2196f3; }
+
+        .rating-item.critic { background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(46, 125, 50, 0.15)); }
+        .rating-item.critic .score { color: #4caf50; }
+
+        .rating-item.metacritic-critic { background: linear-gradient(135deg, rgba(255, 204, 52, 0.15), rgba(204, 163, 42, 0.15)); }
+        .rating-item.metacritic-critic .score { color: #ffcc34; }
+
+        .rating-item.metacritic-user { background: linear-gradient(135deg, rgba(102, 178, 255, 0.15), rgba(51, 133, 204, 0.15)); }
+        .rating-item.metacritic-user .score { color: #66b2ff; }
+
+        .rating-item .score.none { color: #666; }
+
+        /* ProtonDB tier badges */
+        .protondb-tier {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .protondb-tier.platinum { background: #b4c7dc; color: #000; }
+        .protondb-tier.gold { background: #cfb53b; color: #000; }
+        .protondb-tier.silver { background: #a6a6a6; color: #000; }
+        .protondb-tier.bronze { background: #cd7f32; color: #000; }
+        .protondb-tier.borked { background: #ff0000; color: #fff; }
+        .protondb-tier.pending { background: #666; color: #fff; }
+        .protondb-tier.native { background: #5c9e31; color: #fff; }
+
+        .rating-item.protondb {
+            background: linear-gradient(135deg, rgba(126, 87, 194, 0.15), rgba(103, 58, 183, 0.15));
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .rating-item.protondb .label {
+            font-size: 0.75rem;
+            color: #b39ddb;
+            margin-top: 6px;
+        }
+        .rating-item.protondb .count {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .rating-item .label {
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .rating-item .count {
+            font-size: 0.6rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Average Rating Display */
+        .average-rating {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .average-rating .avg-score {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .average-rating .avg-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .average-rating .avg-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .average-rating .avg-sources {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        /* Combined Ratings Section */
+        .ratings-combined {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .rating-source {
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .rating-source:last-child {
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .rating-source-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .rating-source-icon {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+        }
+
+        .rating-source-name {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .rating-item.steam {
+            background: linear-gradient(135deg, rgba(102, 192, 244, 0.15), rgba(27, 40, 56, 0.3));
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .rating-item.steam .score {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #66c0f4;
+        }
+
+        .rating-item.steam .label {
+            font-size: 0.75rem;
+            color: #9acfea;
+            margin-top: 2px;
+        }
+
+        .rating-item.steam .count {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .platforms {
+            display: flex;
+            gap: 10px;
+        }
+
+        .platform {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 0.8rem;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .screenshot {
+            width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .screenshot:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .lightbox-close:hover {
+            color: #667eea;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            padding: 20px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(102, 126, 234, 0.8);
+        }
+
+        .lightbox-prev {
+            left: 20px;
+        }
+
+        .lightbox-next {
+            right: 20px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* IGDB Settings Section */
+        .igdb-settings {
+            margin-top: 15px;
+        }
+
+        .igdb-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .igdb-input {
+            flex: 1;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #e4e4e4;
+            font-size: 0.9rem;
+        }
+
+        .igdb-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .igdb-input::placeholder {
+            color: #666;
+        }
+
+        .igdb-btn {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .igdb-btn:hover {
+            opacity: 0.9;
+        }
+
+        .igdb-btn:active {
+            transform: scale(0.98);
+        }
+
+        .igdb-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .igdb-btn.clear {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .igdb-btn.clear:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        .igdb-status {
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .igdb-status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .igdb-status.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .igdb-status.loading {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .igdb-current {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .igdb-current a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .igdb-current a:hover {
+            text-decoration: underline;
+        }
+
+        .igdb-help {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .igdb-help a {
+            color: #667eea;
+        }
+
+        /* Collapsible Settings Panel */
+        .settings-panel {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: none;
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .settings-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .settings-toggle.expanded .settings-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .settings-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .settings-content.expanded {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .settings-inner {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-section h3 {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Hide Game Toggle */
+        .hide-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .hide-toggle-label {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hide-toggle-label span {
+            font-size: 0.9rem;
+            color: #e4e4e4;
+        }
+
+        .hide-toggle-label small {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background-color: white;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                height: auto;
+            }
+
+            .hero-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .hero-info h1 {
+                font-size: 1.8rem;
+            }
+
+            .hero-meta {
+                justify-content: center;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/" class="nav-brand">Backlogia</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Discover</a>
+            <a href="/library" class="nav-link">Library</a>
+            <a href="/collections" class="nav-link">Collections</a>
+            <a href="/random" class="nav-link random">Random</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        {% set hero_bg = game.background_image
+            or game.cover_url_override
+            or game.steamgriddb_cover_url
+            or game.igdb_cover_url 
+            or game.cover_image
+        %}
+        {% if hero_bg %}
+        <img src="{{ hero_bg }}" alt="" class="hero-bg"
+             onerror="this.style.display='none';">
+        {% endif %}
+        <div class="hero-content">
+            {% set cover_url =
+                game.cover_url_override
+                or game.steamgriddb_cover_url
+                or game.igdb_cover_url
+                or game.cover_image
+            %}
+            {% if cover_url %}
+            <img src="{{ cover_url }}" alt="{{ game.name }}" class="hero-cover"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="hero-cover-placeholder" style="display:none;">🎮</div>
+            {% else %}
+            <div class="hero-cover-placeholder">🎮</div>
+            {% endif %}
+            <div class="hero-info">
+                <h1>{{ game.name or 'Unknown Game' }}</h1>
+                <div class="hero-meta">
+                    <div class="store-badges">
+                        {% for info in store_info %}
+                        <span class="store-badge {{ info.store }}">{{ info.store }}</span>
+                        {% endfor %}
+                    </div>
+                    {% set total_playtime = store_info|selectattr('playtime_hours')|map(attribute='playtime_hours')|sum %}
+                    {% if total_playtime %}
+                    <span class="meta-item">{{ total_playtime|round(1) }} hours played</span>
+                    {% endif %}
+                    <button class="add-to-collection-btn" onclick="openCollectionModal()">
+                        + Add to Collection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="content-grid">
+            <div class="main-content">
+                {% set summary = game.igdb_summary or game.description %}
+                {% if summary %}
+                <div class="section">
+                    <h2>About</h2>
+                    <div class="description">{{ summary|safe }}</div>
+                </div>
+                {% endif %}
+
+                {% set genres = parse_json(game.genres) %}
+                {% if genres %}
+                <div class="section">
+                    <h2>Genres</h2>
+                    <div class="tags">
+                        {% for genre in genres %}
+                        <span class="tag">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% set platforms = parse_json(game.supported_platforms) %}
+                {% if platforms %}
+                <div class="section">
+                    <h2>Platforms</h2>
+                    <div class="platforms">
+                        {% for platform in platforms %}
+                        <span class="platform">{{ platform }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% set screenshots = parse_json(game.igdb_screenshots) %}
+                {% if screenshots %}
+                <div class="section">
+                    <h2>Screenshots</h2>
+                    <div class="screenshots-grid">
+                        {% for url in screenshots %}
+                        <img src="{{ url }}" alt="Screenshot {{ loop.index }}" class="screenshot"
+                             data-index="{{ loop.index0 }}" onclick="openLightbox({{ loop.index0 }})" loading="lazy">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="sidebar">
+                <div class="section">
+                    <h2>Details</h2>
+                    <ul class="info-list">
+                        {% set developers = parse_json(game.developers) %}
+                        {% if developers %}
+                        <li>
+                            <span class="info-label">Developer</span>
+                            <span class="info-value">{{ developers|join(', ') }}</span>
+                        </li>
+                        {% endif %}
+
+                        {% set publishers = parse_json(game.publishers) %}
+                        {% if publishers %}
+                        <li>
+                            <span class="info-label">Publisher</span>
+                            <span class="info-value">{{ publishers|join(', ') }}</span>
+                        </li>
+                        {% endif %}
+
+                        {% if game.release_date %}
+                        <li>
+                            <span class="info-label">Release Date</span>
+                            <span class="info-value">{{ game.release_date[:10] if game.release_date else 'Unknown' }}</span>
+                        </li>
+                        {% endif %}
+
+                        {% if game.can_run_offline is not none %}
+                        <li>
+                            <span class="info-label">Offline Play</span>
+                            <span class="info-value">{{ 'Yes' if game.can_run_offline else 'No' }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
+                <div class="section">
+                    <h2>Owned On</h2>
+                    <div class="owned-stores-list">
+                        {% for info in store_info %}
+                        {% if info.store_url %}
+                        <a href="{{ info.store_url }}" target="_blank" rel="noopener" class="store-link">
+                            <img src="/static/images/{{ store_icons.get(info.store, 'steam-24.png') }}" alt="{{ info.store }}" class="store-link-icon">
+                            <div class="store-link-info">
+                                <div class="store-link-name">{{ info.store }}</div>
+                                <div class="store-link-meta">
+                                    {% if info.playtime_hours %}{{ info.playtime_hours|round(1) }} hrs played{% else %}View in store{% endif %}
+                                </div>
+                            </div>
+                            <span class="store-link-arrow">→</span>
+                        </a>
+                        {% else %}
+                        <div class="store-link" style="cursor: default;">
+                            <img src="/static/images/{{ store_icons.get(info.store, 'steam-24.png') }}" alt="{{ info.store }}" class="store-link-icon">
+                            <div class="store-link-info">
+                                <div class="store-link-name">{{ info.store }}</div>
+                                <div class="store-link-meta">
+                                    {% if info.playtime_hours %}{{ info.playtime_hours|round(1) }} hrs played{% else %}Owned{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% set extra = parse_json(game.extra_data) or {} %}
+                {% set steam_review_desc = extra.get('review_desc') %}
+                {% set steam_total_reviews = extra.get('total_reviews') %}
+                {% set is_steam_game = store_info|selectattr('store', 'equalto', 'steam')|list|length > 0 %}
+                {% set has_steam = game.critics_score and is_steam_game %}
+                {% set has_igdb = game.total_rating or game.igdb_rating or game.aggregated_rating %}
+                {% set has_metacritic = game.metacritic_score or game.metacritic_user_score %}
+                {% set has_protondb = game.protondb_tier and game.protondb_tier != 'unknown' %}
+
+                {% if has_steam or has_igdb or has_metacritic or has_protondb %}
+                <div class="section">
+                    <h2>Ratings</h2>
+                    {% if game.average_rating %}
+                    {% set rating_sources = [] %}
+                    {% if has_steam %}{% set _ = rating_sources.append('Steam') %}{% endif %}
+                    {% if has_igdb %}{% set _ = rating_sources.append('IGDB') %}{% endif %}
+                    {% if has_metacritic %}{% set _ = rating_sources.append('Metacritic') %}{% endif %}
+                    <div class="average-rating">
+                        <div class="avg-score">{{ game.average_rating|round|int }}</div>
+                        <div class="avg-info">
+                            <div class="avg-label">Average Rating</div>
+                            <div class="avg-sources">Based on {{ rating_sources|join(', ') }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="ratings-combined">
+                        {% if has_steam %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <img src="/static/images/steam-100.png" alt="Steam" class="rating-source-icon">
+                                <span class="rating-source-name">Steam</span>
+                            </div>
+                            <div class="rating-item steam">
+                                <div class="score">{{ game.critics_score|round|int }}%</div>
+                                <div class="label">{{ steam_review_desc or 'User Reviews' }}</div>
+                                {% if steam_total_reviews %}
+                                <div class="count">{{ "{:,}".format(steam_total_reviews) }} reviews</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if game.total_rating or game.igdb_rating or game.aggregated_rating %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <span class="rating-source-name">IGDB</span>
+                            </div>
+                        
+                            <div class="ratings-grid">
+                        
+                                <div class="rating-item total">
+                                    {% if game.total_rating %}
+                                        <div class="score">{{ game.total_rating|round|int }}</div>
+                                    {% else %}
+                                        <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">Total</div>
+                                    {% if game.total_rating_count %}
+                                        <div class="count">{{ game.total_rating_count }} ratings</div>
+                                    {% endif %}
+                                </div>
+                        
+                                <div class="rating-item user">
+                                    {% if game.igdb_rating %}
+                                        <div class="score">{{ game.igdb_rating|round|int }}</div>
+                                    {% else %}
+                                        <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">User</div>
+                                    {% if game.igdb_rating_count %}
+                                        <div class="count">{{ game.igdb_rating_count }} ratings</div>
+                                    {% endif %}
+                                </div>
+                        
+                                <div class="rating-item critic">
+                                    {% if game.aggregated_rating %}
+                                        <div class="score">{{ game.aggregated_rating|round|int }}</div>
+                                    {% else %}
+                                        <div class="score none">--</div>
+                                    {% endif %}
+                                    <div class="label">Critic</div>
+                                    {% if game.aggregated_rating_count %}
+                                        <div class="count">{{ game.aggregated_rating_count }} reviews</div>
+                                    {% endif %}
+                                </div>
+                        
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if has_protondb %}
+                        <div class="rating-source">
+                            <div class="rating-source-header">
+                                <span class="rating-source-name">ProtonDB (Linux/Steam Deck)</span>
+                            </div>
+                            <div class="rating-item protondb">
+                                <span class="protondb-tier {{ game.protondb_tier }}">{{ game.protondb_tier }}</span>
+                                <div class="label">Compatibility Rating</div>
+                                {% if game.protondb_total %}
+                                <div class="count">{{ game.protondb_total }} user report{{ 's' if game.protondb_total != 1 else '' }}</div>
+                                {% endif %}
+                                {% if game.protondb_trending_tier and game.protondb_trending_tier != game.protondb_tier %}
+                                <div class="count" style="margin-top: 4px;">Trending: <span class="protondb-tier {{ game.protondb_trending_tier }}" style="padding: 2px 8px; font-size: 0.7rem;">{{ game.protondb_trending_tier }}</span></div>
+                                {% endif %}
+                            </div>
+                            {% set protondb_steam_id = game.steam_app_id %}
+                            {% if not protondb_steam_id %}
+                            {% for info in store_info %}
+                            {% if info.store == 'steam' %}
+                            {% set protondb_steam_id = info.store_id %}
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                            {% if protondb_steam_id %}
+                            <div style="margin-top: 8px; text-align: center;">
+                                <a href="https://www.protondb.com/app/{{ protondb_steam_id }}" target="_blank" rel="noopener" style="color: #b39ddb; font-size: 0.8rem; text-decoration: none;">
+                                    View on ProtonDB →
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="settings-panel">
+                    <button type="button" class="settings-toggle" onclick="toggleSettings()">
+                        <span>Settings</span>
+                        <span class="settings-toggle-icon">▼</span>
+                    </button>
+                    <div id="settings-content" class="settings-content">
+                        <div class="settings-inner">
+                            <div class="settings-section">
+                                <h3>Visibility</h3>
+                                <div class="hide-toggle">
+                                    <div class="hide-toggle-label">
+                                        <span>Hide from library</span>
+                                        <small>Hidden games won't appear in the main listing</small>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="hide-toggle" {% if game.hidden %}checked{% endif %} onchange="toggleHidden()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="hide-toggle" style="margin-top: 12px;">
+                                    <div class="hide-toggle-label">
+                                        <span>NSFW content</span>
+                                        <small>Mark as adult/mature content</small>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="nsfw-toggle" {% if game.nsfw %}checked{% endif %} onchange="toggleNsfw()">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <h3>IGDB Data</h3>
+                                <div class="igdb-settings">
+                                    {% if game.igdb_id %}
+                                    <div class="igdb-current">
+                                        <span>Current ID:</span>
+                                        <a href="https://www.igdb.com/games/{{ game.igdb_slug or game.igdb_id }}" target="_blank" rel="noopener">{{ game.igdb_id }}</a>
+                                    </div>
+                                    {% endif %}
+                                    <div class="igdb-input-group">
+                                        <input type="number" id="igdb-id-input" class="igdb-input"
+                                               placeholder="Enter IGDB ID"
+                                               value="{{ game.igdb_id or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="syncIgdb()">Sync</button>
+                                    </div>
+                                    {% if game.igdb_id %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearIgdb()">Clear IGDB Data</button>
+                                    {% endif %}
+                                    <div id="igdb-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        Find the IGDB ID by searching on <a href="https://www.igdb.com/search?utf8=%E2%9C%93&type=1&q={{ game.name|urlencode }}" target="_blank" rel="noopener">igdb.com</a>.
+                                        The ID is in the URL (e.g., igdb.com/games/<strong>slug</strong>/123 → ID is 123).
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <h3>Cover Art</h3>
+                                <div class="igdb-settings">
+                                    <div class="igdb-input-group">
+                                        <input type="url" id="cover-override-input" class="igdb-input"
+                                               placeholder="Enter custom cover image URL"
+                                               value="{{ game.cover_url_override or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="saveCoverOverride()">Save</button>
+                                    </div>
+                                    {% if game.cover_url_override %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearCoverOverride()">Clear Override</button>
+                                    {% endif %}
+                                    <div id="cover-override-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        Override the cover art with a custom image URL. This takes priority over IGDB and store images.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <h3>Metacritic</h3>
+                                <div class="igdb-settings">
+                                    {% if game.metacritic_score %}
+                                    <div class="igdb-current">
+                                        <span>Score: {{ game.metacritic_score }}</span>
+                                        {% if game.metacritic_user_score %}
+                                        <span style="margin-left: 10px;">User: {{ game.metacritic_user_score }}</span>
+                                        {% endif %}
+                                        {% if game.metacritic_url %}
+                                        <a href="{{ game.metacritic_url }}" target="_blank" rel="noopener">View on Metacritic</a>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="igdb-input-group">
+                                        <input type="text" id="metacritic-slug-input" class="igdb-input"
+                                               placeholder="Enter Metacritic slug (e.g., game-name)"
+                                               value="{{ game.metacritic_slug or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="syncMetacriticGame()">Sync</button>
+                                    </div>
+                                    {% if game.metacritic_slug %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearMetacritic()">Clear Metacritic Data</button>
+                                    {% endif %}
+                                    <div id="metacritic-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        Find the slug by searching on <a href="https://www.metacritic.com/search/{{ game.name|urlencode }}/" target="_blank" rel="noopener">metacritic.com</a>.
+                                        The slug is in the URL (e.g., metacritic.com/game/<strong>slug</strong>/).
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="settings-section">
+                                <h3>ProtonDB (Linux/Steam Deck)</h3>
+                                <div class="igdb-settings">
+                                    {% if game.protondb_tier and game.protondb_tier != 'unknown' %}
+                                    <div class="igdb-current">
+                                        <span>Tier: <span class="protondb-tier {{ game.protondb_tier }}" style="padding: 2px 8px; font-size: 0.75rem;">{{ game.protondb_tier }}</span></span>
+                                        {% if game.protondb_total %}
+                                        <span style="margin-left: 10px;">({{ game.protondb_total }} reports)</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% set steam_store_id = None %}
+                                    {% for info in store_info %}
+                                    {% if info.store == 'steam' %}
+                                    {% set steam_store_id = info.store_id %}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% set effective_steam_id = game.steam_app_id or steam_store_id %}
+                                    {% if game.steam_app_id and not steam_store_id %}
+                                    <div class="igdb-current" style="color: #4caf50;">
+                                        <span>Steam ID from IGDB: {{ game.steam_app_id }}</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="igdb-input-group">
+                                        <input type="text" id="protondb-steam-id-input" class="igdb-input"
+                                               placeholder="Enter Steam ID (e.g., 292030)"
+                                               value="{{ effective_steam_id or '' }}">
+                                        <button type="button" class="igdb-btn" onclick="syncProtondb()">Sync</button>
+                                    </div>
+                                    {% if game.protondb_tier %}
+                                    <button type="button" class="igdb-btn clear" onclick="clearProtondb()">Clear ProtonDB Data</button>
+                                    {% endif %}
+                                    <div id="protondb-status" class="igdb-status" style="display: none;"></div>
+                                    <p class="igdb-help">
+                                        ProtonDB rates Linux/Steam Deck compatibility.
+                                        {% if effective_steam_id %}
+                                        <a href="https://www.protondb.com/app/{{ effective_steam_id }}" target="_blank" rel="noopener">View on ProtonDB</a>
+                                        {% else %}
+                                        Sync with IGDB first to get Steam ID, or search on <a href="https://www.protondb.com/search?q={{ game.name|urlencode }}" target="_blank" rel="noopener">protondb.com</a>.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="settings-section" style="border-top: 1px solid rgba(244, 67, 54, 0.3); padding-top: 20px; margin-top: 20px;">
+                                <h3 style="color: #f44336;">Danger Zone</h3>
+                                <div class="hide-toggle" style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.2);">
+                                    <div class="hide-toggle-label">
+                                        <span style="color: #f44336;">Delete from library</span>
+                                        <small>Permanently remove this game. It will be re-added on next sync if still owned.</small>
+                                    </div>
+                                    <button type="button" class="igdb-btn" style="background: rgba(244, 67, 54, 0.2); color: #f44336; border-color: rgba(244, 67, 54, 0.3);" onclick="deleteGame()">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox for screenshots -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+            <button class="lightbox-nav lightbox-prev" onclick="prevScreenshot()">&lsaquo;</button>
+            <img id="lightbox-img" class="lightbox-img" src="" alt="Screenshot">
+            <button class="lightbox-nav lightbox-next" onclick="nextScreenshot()">&rsaquo;</button>
+            <div id="lightbox-counter" class="lightbox-counter"></div>
+        </div>
+    </div>
+
+    <script>
+        // Screenshots data
+        const screenshots = [
+            {% for url in parse_json(game.igdb_screenshots) or [] %}
+            {{ url.replace('t_screenshot_big', 't_1080p')|tojson }},
+            {% endfor %}
+        ];
+        let currentScreenshotIndex = 0;
+
+        function openLightbox(index) {
+            currentScreenshotIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function updateLightbox() {
+            document.getElementById('lightbox-img').src = screenshots[currentScreenshotIndex];
+            document.getElementById('lightbox-counter').textContent = `${currentScreenshotIndex + 1} / ${screenshots.length}`;
+        }
+
+        function nextScreenshot() {
+            currentScreenshotIndex = (currentScreenshotIndex + 1) % screenshots.length;
+            updateLightbox();
+        }
+
+        function prevScreenshot() {
+            currentScreenshotIndex = (currentScreenshotIndex - 1 + screenshots.length) % screenshots.length;
+            updateLightbox();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('lightbox').classList.contains('active')) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowRight') nextScreenshot();
+                if (e.key === 'ArrowLeft') prevScreenshot();
+            }
+        });
+
+        // IGDB Sync Functions
+        const gameId = {{ game.id }};
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('igdb-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function syncIgdb() {
+            const input = document.getElementById('igdb-id-input');
+            const igdbId = input.value.trim();
+
+            if (!igdbId) {
+                showStatus('Please enter an IGDB ID', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            showStatus('Fetching data from IGDB...', 'loading');
+
+            fetch(`/api/game/${gameId}/igdb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ igdb_id: igdbId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    // Reload page after a short delay to show updated data
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showStatus(data.error || 'Failed to sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearIgdb() {
+            if (!confirm('Are you sure you want to clear all IGDB data for this game?')) {
+                return;
+            }
+
+            showStatus('Clearing IGDB data...', 'loading');
+
+            fetch(`/api/game/${gameId}/igdb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ igdb_id: null })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showStatus(data.error || 'Failed to clear data', 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Allow Enter key to trigger sync
+        document.getElementById('igdb-id-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                syncIgdb();
+            }
+        });
+
+        // Cover Override functions
+        function showCoverStatus(message, type) {
+            const statusEl = document.getElementById('cover-override-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function saveCoverOverride() {
+            const input = document.getElementById('cover-override-input');
+            const coverUrl = input.value.trim();
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            showCoverStatus('Saving cover URL...', 'loading');
+
+            fetch(`/api/game/${gameId}/cover-override`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cover_url_override: coverUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+
+                if (data.success) {
+                    showCoverStatus('Cover URL saved', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showCoverStatus(data.error || 'Failed to save', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                showCoverStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearCoverOverride() {
+            if (!confirm('Are you sure you want to clear the cover art override?')) {
+                return;
+            }
+
+            showCoverStatus('Clearing cover override...', 'loading');
+
+            fetch(`/api/game/${gameId}/cover-override`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cover_url_override: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showCoverStatus('Cover override cleared', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showCoverStatus(data.error || 'Failed to clear', 'error');
+                }
+            })
+            .catch(error => {
+                showCoverStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Allow Enter key to save cover override
+        document.getElementById('cover-override-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveCoverOverride();
+            }
+        });
+
+        // Metacritic Sync Functions
+        function showMetacriticStatus(message, type) {
+            const statusEl = document.getElementById('metacritic-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function syncMetacriticGame() {
+            const input = document.getElementById('metacritic-slug-input');
+            const slug = input.value.trim();
+
+            if (!slug) {
+                showMetacriticStatus('Please enter a Metacritic slug', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            showMetacriticStatus('Fetching data from Metacritic...', 'loading');
+
+            fetch(`/api/game/${gameId}/metacritic`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ metacritic_slug: slug })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+
+                if (data.success) {
+                    showMetacriticStatus(data.message, 'success');
+                    // Reload page after a short delay to show updated data
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMetacriticStatus(data.detail || data.error || 'Failed to sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+                showMetacriticStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearMetacritic() {
+            if (!confirm('Are you sure you want to clear all Metacritic data for this game?')) {
+                return;
+            }
+
+            showMetacriticStatus('Clearing Metacritic data...', 'loading');
+
+            fetch(`/api/game/${gameId}/metacritic`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ metacritic_slug: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMetacriticStatus(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMetacriticStatus(data.detail || data.error || 'Failed to clear data', 'error');
+                }
+            })
+            .catch(error => {
+                showMetacriticStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Delete game from library
+        function deleteGame() {
+            if (!confirm('Are you sure you want to delete this game from your library?\n\nThis will remove it from all collections. It will be re-added on next sync if you still own it.')) {
+                return;
+            }
+
+            fetch(`/api/game/${gameId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/library';
+                } else {
+                    alert(data.detail || data.error || 'Failed to delete game');
+                }
+            })
+            .catch(error => {
+                alert('Network error: ' + error.message);
+            });
+        }
+
+        // Allow Enter key to sync Metacritic
+        document.getElementById('metacritic-slug-input')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                syncMetacriticGame();
+            }
+        });
+
+        // ProtonDB Sync Functions
+        function showProtondbStatus(message, type) {
+            const statusEl = document.getElementById('protondb-status');
+            statusEl.textContent = message;
+            statusEl.className = 'igdb-status ' + type;
+            statusEl.style.display = 'block';
+        }
+
+        function syncProtondb() {
+            const input = document.getElementById('protondb-steam-id-input');
+            const steamId = input.value.trim();
+
+            if (!steamId) {
+                showProtondbStatus('Please enter a Steam ID', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+            showProtondbStatus('Fetching data from ProtonDB...', 'loading');
+
+            fetch(`/api/game/${gameId}/protondb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ steam_id: steamId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+
+                if (data.success) {
+                    showProtondbStatus(data.message, 'success');
+                    // Reload page after a short delay to show updated data
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showProtondbStatus(data.detail || data.error || 'Failed to sync', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Sync';
+                showProtondbStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function clearProtondb() {
+            if (!confirm('Are you sure you want to clear all ProtonDB data for this game?')) {
+                return;
+            }
+
+            showProtondbStatus('Clearing ProtonDB data...', 'loading');
+
+            fetch(`/api/game/${gameId}/protondb`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ steam_id: '' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showProtondbStatus(data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showProtondbStatus(data.detail || data.error || 'Failed to clear data', 'error');
+                }
+            })
+            .catch(error => {
+                showProtondbStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Allow Enter key to sync ProtonDB
+        document.getElementById('protondb-steam-id-input')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                syncProtondb();
+            }
+        });
+
+        // Settings Panel Toggle
+        function toggleSettings() {
+            const toggle = document.querySelector('.settings-toggle');
+            const content = document.getElementById('settings-content');
+            toggle.classList.toggle('expanded');
+            content.classList.toggle('expanded');
+        }
+
+        // Hide Game Toggle
+        function toggleHidden() {
+            const checkbox = document.getElementById('hide-toggle');
+            const hidden = checkbox.checked;
+
+            fetch(`/api/game/${gameId}/hidden`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ hidden: hidden })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert checkbox on error
+                    checkbox.checked = !hidden;
+                    alert(data.error || 'Failed to update visibility');
+                }
+            })
+            .catch(error => {
+                checkbox.checked = !hidden;
+                alert('Network error: ' + error.message);
+            });
+        }
+
+        // NSFW Toggle
+        function toggleNsfw() {
+            const checkbox = document.getElementById('nsfw-toggle');
+            const nsfw = checkbox.checked;
+
+            fetch(`/api/game/${gameId}/nsfw`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nsfw: nsfw })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    // Revert checkbox on error
+                    checkbox.checked = !nsfw;
+                    alert(data.error || 'Failed to update NSFW status');
+                }
+            })
+            .catch(error => {
+                checkbox.checked = !nsfw;
+                alert('Network error: ' + error.message);
+            });
+        }
+
+        // Collection Management
+        let allCollections = [];
+        let gameCollections = [];
+
+        function openCollectionModal() {
+            const modal = document.getElementById('collection-modal');
+            modal.classList.add('active');
+            loadCollections();
+        }
+
+        function closeCollectionModal(event) {
+            if (event && event.target !== document.getElementById('collection-modal')) return;
+            document.getElementById('collection-modal').classList.remove('active');
+            // Reset create form
+            document.getElementById('collection-create-form').classList.remove('active');
+            document.getElementById('new-collection-name').value = '';
+            hideCollectionStatus();
+        }
+
+        function loadCollections() {
+            const listEl = document.getElementById('collection-list');
+            listEl.innerHTML = '<div class="collection-empty">Loading...</div>';
+
+            // Fetch all collections and this game's collections in parallel
+            Promise.all([
+                fetch('/api/collections').then(r => r.json()),
+                fetch(`/api/game/${gameId}/collections`).then(r => r.json())
+            ])
+            .then(([collections, gameColls]) => {
+                allCollections = collections;
+                gameCollections = gameColls.map(c => c.id);
+                renderCollections();
+            })
+            .catch(error => {
+                listEl.innerHTML = '<div class="collection-empty">Failed to load collections</div>';
+            });
+        }
+
+        function renderCollections() {
+            const listEl = document.getElementById('collection-list');
+
+            if (allCollections.length === 0) {
+                listEl.innerHTML = '<div class="collection-empty">No collections yet. Create one below!</div>';
+                return;
+            }
+
+            let html = '';
+            for (const collection of allCollections) {
+                const inCollection = gameCollections.includes(collection.id);
+                html += `
+                    <div class="collection-item ${inCollection ? 'in-collection' : ''}"
+                         data-collection-id="${collection.id}"
+                         onclick="toggleCollection(${collection.id}, ${inCollection})">
+                        <div class="collection-checkbox">
+                            <span class="collection-checkbox-icon">&#10003;</span>
+                        </div>
+                        <div class="collection-item-info">
+                            <div class="collection-item-name">${escapeHtml(collection.name)}</div>
+                            <div class="collection-item-count">${collection.game_count} game${collection.game_count !== 1 ? 's' : ''}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            listEl.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function toggleCollection(collectionId, isInCollection) {
+            const item = document.querySelector(`.collection-item[data-collection-id="${collectionId}"]`);
+            item.style.opacity = '0.5';
+            item.style.pointerEvents = 'none';
+
+            if (isInCollection) {
+                // Remove from collection
+                fetch(`/api/collections/${collectionId}/games/${gameId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+
+                    if (data.success) {
+                        gameCollections = gameCollections.filter(id => id !== collectionId);
+                        // Update game count
+                        const coll = allCollections.find(c => c.id === collectionId);
+                        if (coll) coll.game_count--;
+                        renderCollections();
+                    } else {
+                        showCollectionStatus(data.error || 'Failed to remove from collection', 'error');
+                    }
+                })
+                .catch(error => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+                    showCollectionStatus('Network error', 'error');
+                });
+            } else {
+                // Add to collection
+                fetch(`/api/collections/${collectionId}/games`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ game_id: gameId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+
+                    if (data.success) {
+                        gameCollections.push(collectionId);
+                        // Update game count
+                        const coll = allCollections.find(c => c.id === collectionId);
+                        if (coll) coll.game_count++;
+                        renderCollections();
+                    } else {
+                        showCollectionStatus(data.error || 'Failed to add to collection', 'error');
+                    }
+                })
+                .catch(error => {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+                    showCollectionStatus('Network error', 'error');
+                });
+            }
+        }
+
+        function toggleCreateForm() {
+            const form = document.getElementById('collection-create-form');
+            form.classList.toggle('active');
+            if (form.classList.contains('active')) {
+                document.getElementById('new-collection-name').focus();
+            }
+        }
+
+        function createAndAddCollection() {
+            const nameInput = document.getElementById('new-collection-name');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showCollectionStatus('Please enter a collection name', 'error');
+                return;
+            }
+
+            const btn = document.querySelector('.collection-create-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            // Create collection and add game to it
+            fetch('/api/collections', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add game to the new collection
+                    return fetch(`/api/collections/${data.id}/games`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ game_id: gameId })
+                    })
+                    .then(response => response.json())
+                    .then(addData => {
+                        btn.disabled = false;
+                        btn.textContent = 'Create & Add';
+                        nameInput.value = '';
+                        document.getElementById('collection-create-form').classList.remove('active');
+
+                        // Refresh the collections list
+                        loadCollections();
+                        showCollectionStatus(`Added to "${name}"`, 'success');
+                    });
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Create & Add';
+                    showCollectionStatus(data.error || 'Failed to create collection', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Create & Add';
+                showCollectionStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function showCollectionStatus(message, type) {
+            const statusEl = document.getElementById('collection-status');
+            statusEl.textContent = message;
+            statusEl.className = 'collection-status ' + type;
+            statusEl.style.display = 'block';
+            setTimeout(hideCollectionStatus, 4000);
+        }
+
+        function hideCollectionStatus() {
+            document.getElementById('collection-status').style.display = 'none';
+        }
+
+        // Handle Enter key in collection name input
+        document.getElementById('new-collection-name')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createAndAddCollection();
+            }
+        });
+    </script>
+
+    <!-- Collection Modal -->
+    <div id="collection-modal" class="collection-modal-overlay" onclick="closeCollectionModal(event)">
+        <div class="collection-modal" onclick="event.stopPropagation()">
+            <div class="collection-modal-header">
+                <h2 class="collection-modal-title">Add to Collection</h2>
+                <button class="collection-modal-close" onclick="closeCollectionModal()">&times;</button>
+            </div>
+
+            <div id="collection-list" class="collection-list">
+                <div class="collection-empty">Loading...</div>
+            </div>
+
+            <div class="collection-create-section">
+                <div class="collection-create-toggle" onclick="toggleCreateForm()">
+                    + Create new collection
+                </div>
+                <div id="collection-create-form" class="collection-create-form">
+                    <input type="text" id="new-collection-name" class="collection-create-input"
+                           placeholder="Collection name...">
+                    <button class="collection-create-btn" onclick="createAndAddCollection()">Create & Add</button>
+                </div>
+            </div>
+
+            <div id="collection-status" class="collection-status" style="display: none;"></div>
+        </div>
+    </div>
+    {% include '_footer.html' %}
+</body>
+</html>

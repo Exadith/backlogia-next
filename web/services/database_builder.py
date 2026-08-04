@@ -1,0 +1,830 @@
+# database_builder.py
+# Combines Steam, Epic, GOG, and itch.io libraries into a central SQLite database
+
+import sqlite3
+import json
+from datetime import datetime
+from ..config import DATABASE_PATH
+
+def game_exists(cursor, store, store_id):
+  cursor.execute(
+      """
+      SELECT 1
+      FROM games
+      WHERE store = ?
+        AND store_id = ?
+      LIMIT 1
+      """,
+      (store, str(store_id)),
+  )
+  return cursor.fetchone() is not None
+
+def create_database():
+    """Create the SQLite database with the games table."""
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS games (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            store TEXT NOT NULL,
+            store_id TEXT,
+
+            -- Metadata
+            description TEXT,
+            developers TEXT,  -- JSON array
+            publishers TEXT,  -- JSON array
+            genres TEXT,      -- JSON array
+
+            -- Images
+            cover_image TEXT,
+            background_image TEXT,
+            icon TEXT,
+
+            -- Platform info
+            supported_platforms TEXT,  -- JSON array
+
+            -- Dates
+            release_date TEXT,
+            created_date TEXT,
+            last_modified TEXT,
+
+            -- Stats
+            playtime_hours REAL,
+            critics_score REAL,
+            average_rating REAL,  -- Computed average across all available ratings
+
+            -- Additional data
+            can_run_offline BOOLEAN,
+            dlcs TEXT,  -- JSON array
+            extra_data TEXT,  -- JSON for store-specific data
+
+            -- Tracking
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            UNIQUE(store, store_id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_games_store ON games(store)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_games_name ON games(name)
+    """)
+
+    # Settings table for storing user configuration
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Collections table for user-created game collections
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS collections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Junction table for games in collections
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS collection_games (
+            collection_id INTEGER NOT NULL,
+            game_id INTEGER NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (collection_id, game_id),
+            FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+        )
+    """)
+
+    conn.commit()
+    return conn
+
+
+def import_steam_games(conn):
+    """Import games from Steam."""
+    print("Importing Steam library...")
+    cursor = conn.cursor()
+
+
+    try:
+        from ..sources.steam import get_steam_library
+
+        games = get_steam_library(fetch_reviews=True, max_workers=5)
+        if not games:
+            print("  No Steam games found or not authenticated")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                appid = game.get("appid")
+
+                if game_exists(cursor, "steam", appid):
+                    continue
+
+                cover_url = (
+                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_600x900_2x.jpg"
+                )
+                cover_image = cover_url
+                
+                background_image = None
+                
+                if appid:
+                    background_url = (
+                        f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_hero.jpg"
+                    )
+                
+                    background_image = background_url
+                
+                cursor.execute("""
+                    INSERT INTO games (
+                        name,
+                        store,
+                        store_id,
+                        steam_app_id,
+                        cover_image,
+                        background_image,
+                        icon,
+                        playtime_hours,
+                        critics_score,
+                        extra_data,
+                        updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "steam",
+                    str(appid) if appid else None,   # store_id
+                    str(appid) if appid else None,   # steam_app_id
+                    cover_image,
+                    background_image,
+                    game.get("icon_url"),
+                    game.get("playtime_hours"),
+                    game.get("review_score"),
+                    json.dumps(game),
+                    datetime.now().isoformat()
+                ))
+
+                count += 1
+
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Steam games")
+        return count
+
+    except Exception as e:
+        print(f"  Steam import error: {e}")
+        return 0
+
+
+def import_epic_games(conn):
+    """Import games from Epic Games Store."""
+    print("Importing Epic library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.epic import get_epic_library_legendary
+
+        games = get_epic_library_legendary()
+        if not games:
+            print("  No Epic games found or not authenticated")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "epic", game.get("app_name")):
+                    continue
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, description, developers,
+                        supported_platforms, cover_image, release_date,
+                        created_date, last_modified, can_run_offline,
+                        dlcs, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "epic",
+                    game.get("app_name"),
+                    game.get("description"),
+                    json.dumps([game.get("developer")]) if game.get("developer") else None,
+                    json.dumps(game.get("supported_platforms", [])),
+                    game.get("cover_image"),
+                    game.get("created_date"),
+                    game.get("created_date"),
+                    game.get("last_modified"),
+                    game.get("can_run_offline"),
+                    json.dumps(game.get("dlcs", [])),
+                    json.dumps(game),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Epic games")
+        return count
+    except Exception as e:
+        print(f"  Epic import error: {e}")
+        return 0
+
+
+def import_gog_games(conn):
+    """Import games from GOG Galaxy."""
+    print("Importing GOG library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.gog import get_gog_library
+
+        games = get_gog_library()
+        if not games:
+            print("  No GOG games found or database not accessible")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "gog", game.get("product_id")):
+                    continue
+                # Convert Unix timestamp to ISO date if present
+                release_date = None
+                if game.get("release_date"):
+                    try:
+                        release_date = datetime.fromtimestamp(
+                            game["release_date"]
+                        ).isoformat()
+                    except (ValueError, TypeError):
+                        pass
+
+                # Combine genres and themes, de-duplicate (case-insensitive)
+                genres = game.get("genres", [])
+                themes = game.get("themes", [])
+                seen = set()
+                combined_tags = []
+                for tag in genres + themes:
+                    if tag and tag.lower() not in seen:
+                        seen.add(tag.lower())
+                        combined_tags.append(tag)
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, description, developers,
+                        publishers, genres, cover_image, background_image,
+                        icon, release_date, critics_score, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "gog",
+                    game.get("product_id"),
+                    game.get("summary"),
+                    json.dumps(game.get("developers", [])),
+                    json.dumps(game.get("publishers", [])),
+                    json.dumps(combined_tags),
+                    game.get("cover_image"),
+                    game.get("background_image"),
+                    game.get("icon"),
+                    release_date,
+                    game.get("critics_score"),
+                    json.dumps(game),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} GOG games")
+        return count
+    except Exception as e:
+        print(f"  GOG import error: {e}")
+        return 0
+
+
+def import_itch_games(conn):
+    """Import games from itch.io (requires prior OAuth setup)."""
+    print("Importing itch.io library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.itch import get_auth_token, get_owned_games
+
+        token = get_auth_token()
+        if not token:
+            print("  itch.io not configured or not authenticated")
+            print("  Set your itch.io API key in the Settings page")
+            print("  (get key at: https://itch.io/user/settings/api-keys)")
+            return 0
+
+        games = get_owned_games(token)
+        if not games:
+            print("  No itch.io games found")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "itch", game.get("id")):
+                    continue
+                # Build platforms list
+                platforms = []
+                if game.get("platforms", {}).get("windows"):
+                    platforms.append("Windows")
+                if game.get("platforms", {}).get("mac"):
+                    platforms.append("Mac")
+                if game.get("platforms", {}).get("linux"):
+                    platforms.append("Linux")
+                if game.get("platforms", {}).get("android"):
+                    platforms.append("Android")
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, description, cover_image,
+                        supported_platforms, release_date, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("title"),
+                    "itch",
+                    str(game.get("id")),
+                    game.get("short_text"),
+                    game.get("cover_url"),
+                    json.dumps(platforms) if platforms else None,
+                    game.get("published_at"),
+                    json.dumps(game),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('title')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} itch.io games")
+        return count
+    except ImportError:
+        print("  itch.io module not available")
+        return 0
+    except Exception as e:
+        print(f"  itch.io import error: {e}")
+        return 0
+
+
+def import_humble_games(conn):
+    """Import games from Humble Bundle (requires session cookie)."""
+    print("Importing Humble Bundle library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.humble import get_humble_library
+
+        games = get_humble_library()
+        if not games:
+            print("  No Humble Bundle games found or not authenticated")
+            print("  Set your Humble Bundle session cookie in Settings")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "humble", game.get("machine_name")):
+                    continue
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image, icon,
+                        supported_platforms, publishers, release_date,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("human_name"),
+                    "humble",
+                    game.get("machine_name"),
+                    game.get("icon"),
+                    game.get("icon"),
+                    json.dumps(game.get("platforms", [])),
+                    json.dumps([game.get("payee")]) if game.get("payee") else None,
+                    game.get("created"),
+                    json.dumps(game),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('human_name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Humble Bundle games")
+        return count
+    except ImportError:
+        print("  Humble Bundle module not available")
+        return 0
+    except Exception as e:
+        print(f"  Humble Bundle import error: {e}")
+        return 0
+
+
+def import_battlenet_games(conn):
+    """Import games from Battle.net (requires session cookie)."""
+    print("Importing Battle.net library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.battlenet import get_battlenet_library
+
+        games = get_battlenet_library()
+        if not games:
+            print("  No Battle.net games found or not authenticated")
+            print("  Set your Battle.net session cookie in Settings")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+                if game_exists(cursor, "battlenet", game.get("title_id")):
+                    continue
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "battlenet",
+                    game.get("title_id"),
+                    game.get("cover_image"),
+                    json.dumps(game.get("raw_data", {})),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Battle.net games")
+        return count
+    except ImportError:
+        print("  Battle.net module not available")
+        return 0
+    except Exception as e:
+        print(f"  Battle.net import error: {e}")
+        return 0
+
+
+def import_ea_games(conn):
+    """Import games from EA (requires session cookies)."""
+    print("Importing EA library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.ea import get_ea_library
+
+        games = get_ea_library()
+        if not games:
+            print("  No EA games found or not authenticated")
+            print("  Get a new EA bearer token using the script in Settings")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "ea", game.get("offer_id")):
+                    continue
+                # Build developers/publishers JSON arrays
+                developers = [game.get("developer")] if game.get("developer") else None
+                publishers = [game.get("publisher")] if game.get("publisher") else None
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image,
+                        developers, publishers, release_date,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "ea",
+                    game.get("offer_id"),
+                    game.get("cover_image"),
+                    json.dumps(developers) if developers else None,
+                    json.dumps(publishers) if publishers else None,
+                    game.get("release_date"),
+                    json.dumps(game.get("raw_data", {})),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} EA games")
+        return count
+    except ImportError:
+        print("  EA module not available")
+        return 0
+    except Exception as e:
+        print(f"  EA import error: {e}")
+        return 0
+
+
+def import_amazon_games(conn):
+    """Import games from Amazon Games (local database or API token)."""
+    print("Importing Amazon Games library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.amazon import get_amazon_library
+
+        games = get_amazon_library()
+        if not games:
+            print("  No Amazon games found or not configured")
+            print("  Set up Amazon Games in Settings (local database or API token)")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+                if game_exists(cursor, "amazon", game.get("product_id")):
+                    continue
+                # Build developers/publishers JSON arrays
+                developers = [game.get("developer")] if game.get("developer") else None
+                publishers = [game.get("publisher")] if game.get("publisher") else None
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image, icon,
+                        developers, publishers, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "amazon",
+                    game.get("product_id"),
+                    game.get("icon_url"),
+                    game.get("icon_url"),
+                    json.dumps(developers) if developers else None,
+                    json.dumps(publishers) if publishers else None,
+                    json.dumps(game.get("raw_data", {})),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Amazon games")
+        return count
+    except ImportError:
+        print("  Amazon Games module not available")
+        return 0
+    except Exception as e:
+        print(f"  Amazon Games import error: {e}")
+        return 0
+
+
+def import_xbox_games(conn):
+    """Import games from Xbox (owned + Game Pass)."""
+    print("Importing Xbox library...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.xbox import get_xbox_library
+
+        games = get_xbox_library()
+        if not games:
+            print("  No Xbox games found or not configured")
+            print("  Add your XSTS token in Settings to import owned games")
+            print("  Game Pass catalog will be imported regardless")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "xbox", game.get("store_id")):
+                    continue
+                # Build developers/publishers JSON arrays
+                developers = [game.get("developer")] if game.get("developer") else None
+                publishers = [game.get("publisher")] if game.get("publisher") else None
+
+                # Store streaming flag and other Xbox-specific data in extra_data
+                extra_data = {
+                    "is_streaming": game.get("is_streaming", False),
+                    "acquisition_type": game.get("acquisition_type"),
+                    "title_id": game.get("title_id"),
+                    "pfn": game.get("pfn"),
+                }
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, cover_image,
+                        developers, publishers, release_date,
+                        extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "xbox",
+                    game.get("store_id"),
+                    game.get("cover_image"),
+                    json.dumps(developers) if developers else None,
+                    json.dumps(publishers) if publishers else None,
+                    game.get("release_date"),
+                    json.dumps(extra_data),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} Xbox games")
+        return count
+    except ImportError:
+        print("  Xbox module not available")
+        return 0
+    except Exception as e:
+        print(f"  Xbox import error: {e}")
+        return 0
+
+
+def import_local_games(conn):
+    """Import games from local folders."""
+    print("Importing local games...")
+    cursor = conn.cursor()
+
+    try:
+        from ..sources.local import get_local_library
+
+        games = get_local_library()
+        if not games:
+            print("  No local games found or not configured")
+            print("  Set LOCAL_GAMES_PATHS in Settings (comma-separated folder paths)")
+            return 0
+
+        count = 0
+        for game in games:
+            try:
+
+                if game_exists(cursor, "local", game.get("store_id")):
+                    continue
+                # Build developers/genres JSON arrays if provided
+                developers = game.get("developers")
+                genres = game.get("genres")
+
+                # Store folder path and any override data in extra_data
+                extra_data = {
+                    "folder_path": game.get("folder_path"),
+                }
+                if game.get("igdb_id"):
+                    extra_data["manual_igdb_id"] = game.get("igdb_id")
+
+                cursor.execute("""
+                    INSERT INTO games (
+                        name, store, store_id, description, cover_image,
+                        developers, genres, release_date, extra_data, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    game.get("name"),
+                    "local",
+                    game.get("store_id"),
+                    game.get("description"),
+                    game.get("cover_image"),
+                    json.dumps(developers) if developers else None,
+                    json.dumps(genres) if genres else None,
+                    game.get("release_date"),
+                    json.dumps(extra_data),
+                    datetime.now().isoformat()
+                ))
+                count += 1
+            except Exception as e:
+                print(f"  Error importing {game.get('name')}: {e}")
+
+        conn.commit()
+        print(f"  Imported {count} local games")
+        return count
+    except ImportError:
+        print("  Local games module not available")
+        return 0
+    except Exception as e:
+        print(f"  Local games import error: {e}")
+        return 0
+
+
+def add_average_rating_column(conn):
+    """Add average_rating column to the database if it doesn't exist."""
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(games)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    if "average_rating" not in existing_columns:
+        cursor.execute("ALTER TABLE games ADD COLUMN average_rating REAL")
+        print("Added column: average_rating")
+        conn.commit()
+
+
+def calculate_average_rating(
+    critics_score=None,
+    igdb_rating=None,
+    aggregated_rating=None,
+    total_rating=None,
+    metacritic_score=None,
+    metacritic_user_score=None,
+):
+    """
+    Calculate the average rating across all available ratings.
+    All ratings are normalized to 0-100 scale.
+    Returns None if no ratings are available.
+    """
+    ratings = []
+
+    # Steam critics_score is already 0-100
+    if critics_score is not None:
+        ratings.append(float(critics_score))
+
+    # IGDB ratings are already 0-100
+    if igdb_rating is not None:
+        ratings.append(float(igdb_rating))
+    if aggregated_rating is not None:
+        ratings.append(float(aggregated_rating))
+    if total_rating is not None:
+        ratings.append(float(total_rating))
+
+    # Metacritic critic score is 0-100
+    if metacritic_score is not None:
+        ratings.append(float(metacritic_score))
+
+    # Metacritic user score is 0-10, normalize to 0-100
+    if metacritic_user_score is not None:
+        ratings.append(float(metacritic_user_score) * 10)
+
+    if not ratings:
+        return None
+
+    return round(sum(ratings) / len(ratings), 1)
+
+
+def update_average_rating(conn, game_id):
+    """
+    Fetch all ratings for a game and update its average_rating.
+    Call this after updating any rating field for a game.
+    """
+    cursor = conn.cursor()
+
+    # First ensure the column exists
+    add_average_rating_column(conn)
+
+    # Fetch all rating fields for this game
+    cursor.execute(
+        """SELECT critics_score, igdb_rating, aggregated_rating, total_rating,
+                  metacritic_score, metacritic_user_score
+           FROM games WHERE id = ?""",
+        (game_id,),
+    )
+    row = cursor.fetchone()
+    if not row:
+        return None
+
+    avg = calculate_average_rating(
+        critics_score=row[0],
+        igdb_rating=row[1],
+        aggregated_rating=row[2],
+        total_rating=row[3],
+        metacritic_score=row[4],
+        metacritic_user_score=row[5],
+    )
+
+    cursor.execute(
+        "UPDATE games SET average_rating = ? WHERE id = ?",
+        (avg, game_id),
+    )
+    conn.commit()
+    return avg
+
+
+def get_stats(conn):
+    """Get database statistics."""
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM games")
+    total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT store, COUNT(*) FROM games GROUP BY store")
+    by_store = dict(cursor.fetchall())
+
+    return {"total": total, "by_store": by_store}

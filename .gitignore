@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtualenv
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# SQLite
+*.db
+*.db-journal
+*.bak
+
+# Runtime data
+data/
+
+# Docker overrides
+.env
+
+# Logs
+*.log

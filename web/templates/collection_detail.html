@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ collection.name }} - Backlogia</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
+    <meta name="theme-color" content="#1a1a2e">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e4e4e4;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(13, 13, 26, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+            padding: 8px 0;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .nav-link.random {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link.random:hover {
+            opacity: 0.8;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Collection Header */
+        .collection-header {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .collection-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .collection-title {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .collection-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .collection-description {
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .collection-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .collection-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .collection-stat strong {
+            color: #667eea;
+        }
+
+        /* Games Grid (same as index.html) */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-cover {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3e 100%);
+        }
+
+        .game-cover-placeholder {
+            width: 100%;
+            aspect-ratio: 2/3;
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #444;
+        }
+
+        .game-info {
+            padding: 15px;
+        }
+
+        .game-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            height: 2.6em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        .store-icons {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .store-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .ratings-bar {
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+            font-size: 0.65rem;
+            font-weight: bold;
+            height: 20px;
+        }
+
+        .ratings-bar .rating {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            min-width: 24px;
+            color: white;
+        }
+
+        .ratings-bar .rating.total {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .ratings-bar .rating.user {
+            background: linear-gradient(135deg, #2196f3, #1565c0);
+        }
+
+        .ratings-bar .rating.critic {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+        }
+
+        /* Remove from collection button */
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background: rgba(244, 67, 54, 0.9);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .game-card:hover .remove-btn {
+            opacity: 1;
+        }
+
+        .remove-btn:hover {
+            background: rgba(244, 67, 54, 1);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #888;
+        }
+
+        .empty-state-desc {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        /* Edit Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .modal-close:hover {
+            color: #e4e4e4;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e4;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #666;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Status Messages */
+        .status-message {
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #81c784;
+        }
+
+        .status-message.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #e57373;
+        }
+
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .collection-header-top {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .collection-title {
+                font-size: 1.5rem;
+            }
+
+            .top-nav {
+                padding: 15px 20px;
+            }
+
+            .nav-links {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/" class="nav-brand">Backlogia</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Discover</a>
+            <a href="/library" class="nav-link">Library</a>
+            <a href="/collections" class="nav-link active">Collections</a>
+            <a href="/random" class="nav-link random">Random</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="status-message" class="status-message"></div>
+
+        <div class="collection-header">
+            <div class="collection-header-top">
+                <h1 class="collection-title">{{ collection.name }}</h1>
+                <div class="collection-actions">
+                    <button class="btn btn-secondary" onclick="openEditModal()">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteCollection()">Delete</button>
+                </div>
+            </div>
+            {% if collection.description %}
+            <p class="collection-description">{{ collection.description }}</p>
+            {% endif %}
+            <div class="collection-meta">
+                <span class="collection-stat"><strong>{{ games|length }}</strong> game{% if games|length != 1 %}s{% endif %}</span>
+            </div>
+        </div>
+
+        {% if games %}
+        {% set store_icons = {'steam': 'steam-100.png', 'epic': 'epic-100.png', 'gog': 'gog-48.png', 'itch': 'itch-90.png', 'humble': 'humble-96.png', 'battlenet': 'battlenet-100.png', 'amazon': 'amazon-120.png', 'ea': 'ea-256.png', 'xbox': 'xbox-100.png', 'ubisoft': 'ubisoft-96.png', 'local': 'local-96.png'} %}
+        <div class="games-grid">
+            {% for grouped_game in games %}
+            {% set game = grouped_game.primary %}
+            <div class="game-card" data-game-id="{{ grouped_game.game_ids[0] }}">
+                <a href="/game/{{ grouped_game.game_ids[0] }}" style="text-decoration: none; color: inherit;">
+                    {% set cover_url = game.cover_url_override or game.igdb_cover_url or game.cover_image %}
+                    {% if cover_url %}
+                    <img src="{{ cover_url }}" alt="{{ game.name }}" class="game-cover" loading="lazy"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <div class="game-cover-placeholder" style="display:none;">+</div>
+                    {% else %}
+                    <div class="game-cover-placeholder">+</div>
+                    {% endif %}
+                    <div class="game-info">
+                        <div class="game-title">{{ game.name or 'Unknown Game' }}</div>
+                        <div class="game-meta">
+                            <div class="store-icons" title="Owned on: {{ grouped_game.stores|join(', ')|capitalize }}">
+                                {% for store in grouped_game.stores %}
+                                <img src="/static/images/{{ store_icons.get(store, 'steam-26.png') }}" alt="{{ store }}" class="store-icon">
+                                {% endfor %}
+                            </div>
+                            {% if game.total_rating or game.igdb_rating or game.aggregated_rating %}
+                            <div class="ratings-bar" title="Total | User | Critic">
+                                {% if game.total_rating %}<span class="rating total">{{ game.total_rating|round|int }}</span>{% endif %}
+                                {% if game.igdb_rating %}<span class="rating user">{{ game.igdb_rating|round|int }}</span>{% endif %}
+                                {% if game.aggregated_rating %}<span class="rating critic">{{ game.aggregated_rating|round|int }}</span>{% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                <button class="remove-btn" onclick="removeGame({{ grouped_game.game_ids[0] }}, this)">Remove</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">+</div>
+            <h2 class="empty-state-title">No games in this collection</h2>
+            <p class="empty-state-desc">Browse your library and add games to this collection.</p>
+            <a href="/library" class="btn btn-primary">Go to Library</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay" onclick="closeEditModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Collection</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="edit-form" onsubmit="saveCollection(event)">
+                <div class="form-group">
+                    <label for="edit-name">Name</label>
+                    <input type="text" id="edit-name" value="{{ collection.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-description">Description (optional)</label>
+                    <textarea id="edit-description">{{ collection.description or '' }}</textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const collectionId = {{ collection.id }};
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message show ' + type;
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 5000);
+        }
+
+        function openEditModal() {
+            document.getElementById('edit-modal').classList.add('active');
+            document.getElementById('edit-name').focus();
+        }
+
+        function closeEditModal(event) {
+            if (event && event.target !== document.getElementById('edit-modal')) return;
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+
+        function saveCollection(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('edit-name').value.trim();
+            const description = document.getElementById('edit-description').value.trim();
+
+            if (!name) {
+                showStatus('Please enter a collection name', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            fetch(`/api/collections/${collectionId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, description })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+
+                if (data.success) {
+                    // Reload page to show updated info
+                    location.reload();
+                } else {
+                    showStatus(data.error || 'Failed to save collection', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function deleteCollection() {
+            if (!confirm('Are you sure you want to delete this collection? This cannot be undone.')) {
+                return;
+            }
+
+            fetch(`/api/collections/${collectionId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/collections';
+                } else {
+                    showStatus(data.error || 'Failed to delete collection', 'error');
+                }
+            })
+            .catch(error => {
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        function removeGame(gameId, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Removing...';
+
+            fetch(`/api/collections/${collectionId}/games/${gameId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the card with animation
+                    const card = btn.closest('.game-card');
+                    card.style.transition = 'opacity 0.3s, transform 0.3s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Check if no more games
+                        if (document.querySelectorAll('.game-card').length === 0) {
+                            location.reload();
+                        }
+                    }, 300);
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Remove';
+                    showStatus(data.error || 'Failed to remove game', 'error');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.textContent = 'Remove';
+                showStatus('Network error: ' + error.message, 'error');
+            });
+        }
+
+        // Handle Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEditModal();
+            }
+        });
+    </script>
+    {% include '_footer.html' %}
+</body>
+</html>
