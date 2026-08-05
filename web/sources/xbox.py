@@ -141,101 +141,121 @@ def get_xuid_from_token(token):
 
 
 def get_owned_games(token, xuid=None):
-    """Fetch owned games from Xbox TitleHub API."""
+    """Fetch owned games from Xbox TitleHub API, merged with the Collections API.
+
+    TitleHub only returns titles with play/activity history on Xbox Live, so
+    it can miss games that are entitled but were never launched (e.g. bought
+    on PC only, gifted, or included with Game Pass Ultimate perks) - Fallout 76
+    is a common example if it was never actually run through the Xbox app.
+    The Collections API reports real entitlements regardless of play history,
+    so results from both are merged. TitleHub wins on duplicates since it has
+    richer metadata (box art, playtime-adjacent acquisition info).
+    """
+    titlehub_games = []
+    token_invalid = False
+
     try:
         auth_header, userhash = parse_xsts_token(token)
         if not auth_header:
             print("  Invalid XSTS token format")
-            return []
+            token_invalid = True
+        else:
+            if not xuid:
+                xuid = get_xuid_from_token(token)
 
-        # Try to get XUID if not provided
-        if not xuid:
-            xuid = get_xuid_from_token(token)
+            if not xuid:
+                print("  Could not determine XUID - will rely on Collections API only")
+            else:
+                headers = {
+                    **REQUIRED_HEADERS,
+                    "Authorization": auth_header,
+                }
 
-        if not xuid:
-            print("  Could not determine XUID - trying alternative API")
-            # Fall back to Collections API which doesn't need XUID
-            return get_owned_games_from_collections(token)
+                url = f"{TITLEHUB_ENDPOINT}/users/xuid({xuid})/titles/titlehistory/decoration/detail,image,scid"
+                params = {
+                    "maxItems": 1000,
+                }
 
-        headers = {
-            **REQUIRED_HEADERS,
-            "Authorization": auth_header,
-        }
+                print(f"  Fetching owned games for XUID: {xuid}")
+                response = requests.get(url, headers=headers, params=params)
 
-        all_games = []
+                if response.status_code == 401:
+                    print("  Token expired or invalid - please get a new XSTS token")
+                    token_invalid = True
+                elif response.status_code != 200:
+                    print(f"  TitleHub error: {response.status_code} - {response.text[:200]}")
+                else:
+                    try:
+                        data = response.json()
+                        titles = data.get("titles", [])
+                        print(f"  Found {len(titles)} titles in history")
 
-        # Fetch title history
-        url = f"{TITLEHUB_ENDPOINT}/users/xuid({xuid})/titles/titlehistory/decoration/detail,image,scid"
-        params = {
-            "maxItems": 1000,
-        }
+                        for title in titles:
+                            # Filter to games only (not apps)
+                            # titleType: "Game", "App", "DLC"
+                            if title.get("type") not in ["Game", None]:
+                                continue
 
-        print(f"  Fetching owned games for XUID: {xuid}")
-        response = requests.get(url, headers=headers, params=params)
+                            name = title.get("name")
+                            if not name:
+                                continue
 
-        if response.status_code == 401:
-            print("  Token expired or invalid - please get a new XSTS token")
-            return []
+                            # Get product ID
+                            product_id = title.get("pfn") or title.get("titleId")
 
-        if response.status_code != 200:
-            print(f"  TitleHub error: {response.status_code} - {response.text[:200]}")
-            # Try Collections API as fallback
-            return get_owned_games_from_collections(token)
+                            # Get cover image - prefer portrait box art
+                            cover_image = None
+                            images = title.get("images", [])
+                            for img in images:
+                                img_type = img.get("type", "").lower()
+                                if img_type in ["boxart", "poster", "tile"]:
+                                    cover_image = img.get("url")
+                                    break
+                            if not cover_image and images:
+                                cover_image = images[0].get("url")
 
-        try:
-            data = response.json()
-        except json.JSONDecodeError:
-            print(f"  Response not JSON: {response.text[:200]}")
-            return []
+                            # Get acquisition info
+                            acquisition = title.get("acquisition", {})
 
-        titles = data.get("titles", [])
-        print(f"  Found {len(titles)} titles in history")
-
-        for title in titles:
-            # Filter to games only (not apps)
-            # titleType: "Game", "App", "DLC"
-            if title.get("type") not in ["Game", None]:
-                continue
-
-            name = title.get("name")
-            if not name:
-                continue
-
-            # Get product ID
-            product_id = title.get("pfn") or title.get("titleId")
-
-            # Get cover image - prefer portrait box art
-            cover_image = None
-            images = title.get("images", [])
-            for img in images:
-                img_type = img.get("type", "").lower()
-                if img_type in ["boxart", "poster", "tile"]:
-                    cover_image = img.get("url")
-                    break
-            if not cover_image and images:
-                cover_image = images[0].get("url")
-
-            # Get acquisition info
-            acquisition = title.get("acquisition", {})
-
-            all_games.append({
-                "name": name,
-                "store_id": str(product_id) if product_id else None,
-                "cover_image": cover_image,
-                "is_streaming": False,
-                "acquisition_type": acquisition.get("type", "Single"),
-                "title_id": title.get("titleId"),
-                "pfn": title.get("pfn"),
-                "raw_data": title,
-            })
-
-        return all_games
+                            titlehub_games.append({
+                                "name": name,
+                                "store_id": str(product_id) if product_id else None,
+                                "cover_image": cover_image,
+                                "is_streaming": False,
+                                "acquisition_type": acquisition.get("type", "Single"),
+                                "title_id": title.get("titleId"),
+                                "pfn": title.get("pfn"),
+                                "raw_data": title,
+                            })
+                    except json.JSONDecodeError:
+                        print(f"  Response not JSON: {response.text[:200]}")
 
     except Exception as e:
-        print(f"  Error fetching owned games: {e}")
+        print(f"  Error fetching owned games from TitleHub: {e}")
         import traceback
         traceback.print_exc()
-        return []
+
+    if token_invalid:
+        # Token itself is bad - a Collections API call would fail the same way.
+        return titlehub_games
+
+    # Merge with Collections API entitlements - catches games with no play
+    # history that TitleHub wouldn't have surfaced.
+    collections_games = get_owned_games_from_collections(token)
+
+    seen_ids = {g["store_id"] for g in titlehub_games if g.get("store_id")}
+    added_from_collections = 0
+    for game in collections_games:
+        store_id = game.get("store_id")
+        if store_id and store_id not in seen_ids:
+            titlehub_games.append(game)
+            seen_ids.add(store_id)
+            added_from_collections += 1
+
+    if added_from_collections:
+        print(f"  Added {added_from_collections} additional entitlement(s) from Collections API (no play history)")
+
+    return titlehub_games
 
 
 def get_owned_games_from_collections(token):
@@ -427,8 +447,12 @@ def get_product_details(product_ids):
         return []
 
 
-def get_xbox_library():
-    """Fetch all games from Xbox - owned games + Game Pass catalog."""
+def get_xbox_library(include_gamepass=False):
+    """Fetch games from Xbox - owned games, optionally including the Game Pass catalog.
+
+    By default only owned games are imported. Set include_gamepass=True (or the
+    XBOX_INCLUDE_GAMEPASS env var) to also pull the full Game Pass streaming catalog.
+    """
     token = get_xsts_token()
 
     print("Fetching Xbox library...")
@@ -450,21 +474,17 @@ def get_xbox_library():
         print("  No XSTS token configured - skipping owned games")
         print("  To import owned games, add your XSTS token in Settings")
 
-    # Then fetch Game Pass catalog (public API)
-    gamepass_games = get_gamepass_catalog()
-    print(f"  Found {len(gamepass_games)} Game Pass games")
+    if include_gamepass:
+        # Optionally fetch Game Pass catalog (public API)
+        gamepass_games = get_gamepass_catalog()
+        print(f"  Found {len(gamepass_games)} Game Pass games")
 
-    # Add Game Pass games that aren't already owned
-    for game in gamepass_games:
-        store_id = game.get("store_id")
-        if store_id and store_id not in owned_ids:
-            all_games.append(game)
-        elif store_id in owned_ids:
-            # Update existing owned game to mark it has Game Pass too
-            for owned in all_games:
-                if owned.get("store_id") == store_id:
-                    # Keep is_streaming False since they own it
-                    break
+        for game in gamepass_games:
+            store_id = game.get("store_id")
+            if store_id and store_id not in owned_ids:
+                all_games.append(game)
+    else:
+        print("  Skipping Game Pass catalog (include_gamepass=False)")
 
     # Deduplicate by store_id
     seen_ids = set()
