@@ -69,9 +69,17 @@ def library(
         query += " AND id IN (SELECT game_id FROM collection_games WHERE collection_id = ?)"
         params.append(collection)
 
+    # Detect which columns actually exist in the DB (used by both
+    # the ProtonDB filter and sorting below)
+    cursor.execute("PRAGMA table_info(games)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
     # ProtonDB tier filter (hierarchy: platinum > gold > silver > bronze)
+    # Only apply if the column has actually been created (i.e. a ProtonDB
+    # sync has run at least once) - otherwise this would raise
+    # "no such column: protondb_tier" on a fresh install.
     protondb_hierarchy = ["platinum", "gold", "silver", "bronze"]
-    if protondb_tier and protondb_tier in protondb_hierarchy:
+    if protondb_tier and protondb_tier in protondb_hierarchy and "protondb_tier" in existing_columns:
         tier_index = protondb_hierarchy.index(protondb_tier)
         allowed_tiers = protondb_hierarchy[:tier_index + 1]
         placeholders = ",".join("?" * len(allowed_tiers))
@@ -83,8 +91,6 @@ def library(
         query += " AND (igdb_id IS NULL OR igdb_id = 0)"
 
     # Sorting - detect which columns actually exist in the DB
-    cursor.execute("PRAGMA table_info(games)")
-    existing_columns = {row[1] for row in cursor.fetchall()}
     valid_sorts = ["name", "store", "playtime_hours", "critics_score", "release_date", "total_rating", "igdb_rating", "aggregated_rating", "average_rating", "metacritic_score", "metacritic_user_score"]
     available_sorts = [s for s in valid_sorts if s in existing_columns]
     if sort not in available_sorts:

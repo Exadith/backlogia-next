@@ -1228,6 +1228,18 @@
             background: rgba(244, 67, 54, 0.2);
             color: #f44336;
         }
+
+        .store-stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px 6px 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s ease;
+            cursor: pointer;   /* <-- dodane */
+        }
     </style>
 </head>
 <body>
@@ -1255,7 +1267,7 @@
                 <div class="stats-divider"></div>
                 <div class="store-stats">
                     {% for store, count in store_counts.items() %}
-                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}">
+                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}" onclick="filterByStore('{{ store }}')">
                         {% if store in store_icons_header %}
                         <img src="/static/images/{{ store_icons_header[store] }}" alt="{{ store }}" title="{{ store|capitalize }}">
                         {% else %}
@@ -1421,15 +1433,11 @@
             {% set game = grouped_game.primary %}
             <a href="/game/{{ grouped_game.game_ids[0] }}" class="game-card" data-game-ids="{{ grouped_game.game_ids|join(',') }}">
                 <div class="game-checkbox" onclick="toggleGameSelection(event, this)"></div>
-                {% set cover_url = "/covers/" ~ game.id ~ ".jpg" %}
-                <div class="game-cover-wrapper">
-                    {% if cover_url %}
-                    <img src="{{ cover_url }}" alt="{{ game.name }}" class="game-cover" loading="lazy"
-                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <div class="game-cover-placeholder" style="display:none;">🎮</div>
-                    {% else %}
-                    <div class="game-cover-placeholder">🎮</div>
-                    {% endif %}
+                {% set cover_url = game.cover_url_override or ("/covers/" ~ game.id ~ ".jpg") %}
+                 <div class="game-cover-wrapper">
+                     <img src="{{ cover_url }}" alt="{{ game.name }}" class="game-cover" loading="lazy"
+                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                     <div class="game-cover-placeholder" style="display:none;">🎮</div>
                     {% if grouped_game.is_streaming %}
                     <span class="streaming-pill">Streaming</span>
                     {% endif %}
@@ -1723,6 +1731,12 @@
             window.location.href = buildUrl(stores, genres, search, sort, order, excludeStreaming, collection, protondbTier, noIgdb);
         }
 
+        function filterByStore(store) {
+            // Kliknięcie w statystykę sklepu = szybki filtr tylko po tym sklepie,
+            // resetuje pozostałe filtry (genres/search/sort zostają domyślne).
+            saveFilterPreferences([store], [], '', 'name', 'asc', false, 0, '', false);
+            window.location.href = buildUrl([store], [], '', 'name', 'asc', false, 0, '', false);
+        }
         // Multi-select functionality
         let selectMode = false;
         let selectedGames = new Set();

@@ -27,7 +27,7 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN
     )
     from ..sources.local import discover_local_game_paths
 
@@ -52,17 +52,18 @@ def settings_page(
         local_games_paths_value = ",".join(host_paths)
 
     settings = {
-        "steam_id": get_setting(STEAM_ID, ""),
-        "steam_api_key": get_setting(STEAM_API_KEY, ""),
-        "igdb_client_id": get_setting(IGDB_CLIENT_ID, ""),
-        "igdb_client_secret": get_setting(IGDB_CLIENT_SECRET, ""),
-        "igdb_match_threshold": get_setting(IGDB_MATCH_THRESHOLD, "50"),
-        "itch_api_key": get_setting(ITCH_API_KEY, ""),
-        "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
-        "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
-        "gog_db_path": get_setting(GOG_DB_PATH, ""),
-        "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
-        "local_games_paths": local_games_paths_value,
+            "steam_id": get_setting(STEAM_ID, ""),
+            "steam_api_key": get_setting(STEAM_API_KEY, ""),
+            "igdb_client_id": get_setting(IGDB_CLIENT_ID, ""),
+            "igdb_client_secret": get_setting(IGDB_CLIENT_SECRET, ""),
+            "igdb_match_threshold": get_setting(IGDB_MATCH_THRESHOLD, "50"),
+            "itch_api_key": get_setting(ITCH_API_KEY, ""),
+            "humble_session_cookie": get_setting(HUMBLE_SESSION_COOKIE, ""),
+            "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
+            "gog_db_path": get_setting(GOG_DB_PATH, ""),
+            "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
+            "xbox_xsts_token": get_setting(XBOX_XSTS_TOKEN, ""),   # <-- dodane
+            "local_games_paths": local_games_paths_value,
     }
     success_flag = success == "1"
 
@@ -96,20 +97,18 @@ def save_settings(
     battlenet_session_cookie: str = Form(default=""),
     gog_db_path: str = Form(default=""),
     ea_bearer_token: str = Form(default=""),
+    xbox_xsts_token: str = Form(default=""),   # <-- dodane
     local_games_paths: str = Form(default=""),
 ):
     """Save settings from the form."""
-    # Import here to avoid circular imports
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
+        EA_BEARER_TOKEN, XBOX_XSTS_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
     )
 
-    # Detect if running in Docker
     is_docker = os.path.exists("/.dockerenv")
 
-    # Save all form values
     set_setting(STEAM_ID, steam_id.strip())
     set_setting(STEAM_API_KEY, steam_api_key.strip())
     set_setting(IGDB_CLIENT_ID, igdb_client_id.strip())
@@ -120,8 +119,8 @@ def save_settings(
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
     set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
-    
-    # Only save LOCAL_GAMES_PATHS if not in Docker mode
+    set_setting(XBOX_XSTS_TOKEN, xbox_xsts_token.strip())   # <-- dodane
+
     if not is_docker:
         set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())
 
