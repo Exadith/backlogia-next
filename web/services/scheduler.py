@@ -15,10 +15,24 @@ from .jobs import (
     run_job_async, get_active_jobs
 )
 
+# --- Configuration (all via environment variables, all optional) ----------
+
 AUTO_SYNC_ENABLED = os.environ.get("AUTO_SYNC_ENABLED", "false").lower() == "true"
 AUTO_SYNC_INTERVAL_HOURS = float(os.environ.get("AUTO_SYNC_INTERVAL_HOURS", "6"))
 AUTO_SYNC_STORE = os.environ.get("AUTO_SYNC_STORE", "all")  # steam/epic/.../all
-AUTO_SYNC_METADATA = os.environ.get("AUTO_SYNC_METADATA", "false").lower() == "true"
+
+AUTO_SYNC_IGDB = os.environ.get("AUTO_SYNC_IGDB", "false").lower() == "true"
+AUTO_SYNC_METACRITIC = os.environ.get("AUTO_SYNC_METACRITIC", "false").lower() == "true"
+AUTO_SYNC_PROTONDB = os.environ.get("AUTO_SYNC_PROTONDB", "false").lower() == "true"
+AUTO_SYNC_STEAMGRIDDB = os.environ.get("AUTO_SYNC_STEAMGRIDDB", "false").lower() == "true"
+
+# Delay (seconds) before the app starts its very first auto-sync cycle,
+# giving uvicorn/the DB time to finish initializing.
+STARTUP_DELAY_SECONDS = 30
+
+# Delay (seconds) between each metadata sync step, so each one has a
+# reasonable chance to see the games the previous step just added/matched.
+STEP_DELAY_SECONDS = 90
 
 _STORE_SYNC_MAP = None
 
@@ -51,6 +65,8 @@ def _get_store_sync_map():
 def _has_active_job(job_type_value):
     return any(j["type"] == job_type_value for j in get_active_jobs())
 
+
+# --- Individual sync steps --------------------------------------------------
 
 def _run_store_sync():
     if _has_active_job(JobType.STORE_SYNC.value):
@@ -122,29 +138,164 @@ def _run_igdb_sync():
                 job_id, json.dumps({"matched": matched, "failed": failed}),
                 f"[Auto-sync] IGDB sync complete: {matched} matched, {failed} failed"
             )
+        except ValueError as e:
+            # Credentials not configured - fail quietly, no need for a scary traceback
+            fail_job(job_id, f"IGDB not configured: {e}")
         except Exception as e:
             fail_job(job_id, str(e))
 
     run_job_async(job_id, run)
 
 
+def _run_metacritic_sync():
+    if _has_active_job(JobType.METACRITIC_SYNC.value):
+        print("[scheduler] Skipping Metacritic sync - one is already running")
+        return
+
+    from .metacritic_sync import (
+        MetacriticClient, sync_games as metacritic_sync_games, add_metacritic_columns
+    )
+
+    job_id = create_job(JobType.METACRITIC_SYNC, "[Auto-sync] Starting Metacritic sync (missing)...")
+
+    def run(job_id):
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            add_metacritic_columns(conn)
+            client = MetacriticClient()
+            matched, failed = metacritic_sync_games(
+                conn, client, force=False,
+                progress_callback=lambda c, t, m: update_job_progress(job_id, c, t, m)
+            )
+            conn.close()
+            complete_job(
+                job_id, json.dumps({"matched": matched, "failed": failed}),
+                f"[Auto-sync] Metacritic sync complete: {matched} matched, {failed} failed"
+            )
+        except Exception as e:
+            fail_job(job_id, str(e))
+
+    run_job_async(job_id, run)
+
+
+def _run_protondb_sync():
+    if _has_active_job(JobType.PROTONDB_SYNC.value):
+        print("[scheduler] Skipping ProtonDB sync - one is already running")
+        return
+
+    from .protondb_sync import (
+        ProtonDBClient, sync_games as protondb_sync_games, add_protondb_columns
+    )
+
+    job_id = create_job(JobType.PROTONDB_SYNC, "[Auto-sync] Starting ProtonDB sync (missing)...")
+
+    def run(job_id):
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            add_protondb_columns(conn)
+            client = ProtonDBClient()
+            matched, failed = protondb_sync_games(
+                conn, client, force=False,
+                progress_callback=lambda c, t, m: update_job_progress(job_id, c, t, m)
+            )
+            conn.close()
+            complete_job(
+                job_id, json.dumps({"matched": matched, "failed": failed}),
+                f"[Auto-sync] ProtonDB sync complete: {matched} matched, {failed} failed"
+            )
+        except Exception as e:
+            fail_job(job_id, str(e))
+
+    run_job_async(job_id, run)
+
+
+def _run_steamgriddb_sync():
+    if _has_active_job(JobType.STEAMGRIDDB_SYNC.value):
+        print("[scheduler] Skipping SteamGridDB sync - one is already running")
+        return
+
+    from .steamgriddb_sync import (
+        SteamGridDBClient, sync_games as steamgriddb_sync_games, add_steamgriddb_columns
+    )
+
+    api_key = os.getenv("STEAMGRIDDB_API_KEY")
+    if not api_key:
+        print("[scheduler] Skipping SteamGridDB sync - STEAMGRIDDB_API_KEY not set")
+        return
+
+    job_id = create_job(JobType.STEAMGRIDDB_SYNC, "[Auto-sync] Starting SteamGridDB sync (missing)...")
+
+    def run(job_id):
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            add_steamgriddb_columns(conn)
+            client = SteamGridDBClient(api_key)
+            matched, failed = steamgriddb_sync_games(
+                conn, client, force=False,
+                progress_callback=lambda c, t, m: update_job_progress(job_id, c, t, m)
+            )
+            conn.close()
+            complete_job(
+                job_id, json.dumps({"matched": matched, "failed": failed}),
+                f"[Auto-sync] SteamGridDB sync complete: {matched} matched, {failed} failed"
+            )
+        except Exception as e:
+            fail_job(job_id, str(e))
+
+    run_job_async(job_id, run)
+
+
+# --- Main loop ---------------------------------------------------------------
+
+def _wait_for_job_type_to_finish(job_type_value, max_wait_seconds=1800):
+    """Poll until no active job of the given type is running, or timeout."""
+    waited = 0
+    while _has_active_job(job_type_value) and waited < max_wait_seconds:
+        time.sleep(10)
+        waited += 10
+
+
 def _loop():
     interval_seconds = AUTO_SYNC_INTERVAL_HOURS * 3600
     print(
-        f"[scheduler] Auto-sync enabled: every {AUTO_SYNC_INTERVAL_HOURS}h, "
-        f"store={AUTO_SYNC_STORE}, metadata={AUTO_SYNC_METADATA}"
+        f"[scheduler] Auto-sync enabled: every {AUTO_SYNC_INTERVAL_HOURS}h | "
+        f"store={AUTO_SYNC_STORE} | "
+        f"igdb={AUTO_SYNC_IGDB} metacritic={AUTO_SYNC_METACRITIC} "
+        f"protondb={AUTO_SYNC_PROTONDB} steamgriddb={AUTO_SYNC_STEAMGRIDDB}"
     )
 
     # Let the app finish starting up before the first run
-    time.sleep(30)
+    time.sleep(STARTUP_DELAY_SECONDS)
 
     while True:
         try:
             _run_store_sync()
-            if AUTO_SYNC_METADATA:
-                # Give the store sync a head start so IGDB has fresh games to match
-                time.sleep(120)
+            # Wait for the store sync to actually finish before chaining
+            # metadata syncs, so they see the freshly imported games.
+            _wait_for_job_type_to_finish(JobType.STORE_SYNC.value)
+
+            if AUTO_SYNC_IGDB:
                 _run_igdb_sync()
+                _wait_for_job_type_to_finish(JobType.IGDB_SYNC.value)
+                time.sleep(STEP_DELAY_SECONDS)
+
+            if AUTO_SYNC_METACRITIC:
+                _run_metacritic_sync()
+                _wait_for_job_type_to_finish(JobType.METACRITIC_SYNC.value)
+                time.sleep(STEP_DELAY_SECONDS)
+
+            if AUTO_SYNC_PROTONDB:
+                _run_protondb_sync()
+                _wait_for_job_type_to_finish(JobType.PROTONDB_SYNC.value)
+                time.sleep(STEP_DELAY_SECONDS)
+
+            if AUTO_SYNC_STEAMGRIDDB:
+                _run_steamgriddb_sync()
+                _wait_for_job_type_to_finish(JobType.STEAMGRIDDB_SYNC.value)
+
         except Exception as e:
             print(f"[scheduler] Error in scheduler loop: {e}")
 
