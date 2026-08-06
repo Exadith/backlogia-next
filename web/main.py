@@ -27,7 +27,8 @@ from .routes.library import router as library_router
 from .routes.discover import router as discover_router
 from .routes.settings import router as settings_router
 from .routes.jobs import router as jobs_router
-
+from .services.jobs import cleanup_orphaned_jobs
+from .services.scheduler import start_scheduler 
 
 def init_database():
     """Initialize the database and ensure all tables/columns exist."""
@@ -42,8 +43,7 @@ def init_database():
     # Clean up any jobs that were running when the server last stopped
     cleanup_orphaned_jobs()
 
-from .services.jobs import cleanup_orphaned_jobs
-from .services.scheduler import start_scheduler   # <-- dodaj import
+
 
 # Create FastAPI app
 app = FastAPI(
