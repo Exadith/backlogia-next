@@ -194,6 +194,7 @@
     }
 
     // Xbox token extraction (Note: xbox.com blocks external scripts, so this is handled inline in settings.html)
+    // This code is here for reference and for xboxlive.com subdomains that might allow it
     else if (host.includes('xbox.com') || host.includes('xboxlive.com')) {
         (function() {
             var content = createOverlay('#107C10', 'Xbox Token');
@@ -203,7 +204,7 @@
                 var fullHeader = null;
                 var tokenSource = null;
 
-                // Method 1: Check cookies for XBXXtk tokens (needs both token AND userhash)
+                // Method 1: Check cookies for XBXXtk tokens (needs both token AND userHash)
                 var cookies = document.cookie.split(';');
                 for (var i = 0; i < cookies.length; i++) {
                     var cookie = cookies[i].trim();
@@ -212,11 +213,7 @@
                             var value = decodeURIComponent(cookie.split('=').slice(1).join('='));
                             var parsed = JSON.parse(value);
                             var tokenVal = parsed.tokenData && parsed.tokenData.token;
-                            // Try a few known shapes for the userhash claim
-                            var uhs = parsed.tokenData && (
-                                (parsed.tokenData.displayClaims && parsed.tokenData.displayClaims.xui && parsed.tokenData.displayClaims.xui[0] && parsed.tokenData.displayClaims.xui[0].uhs)
-                                || parsed.tokenData.uhs
-                            );
+                            var uhs = parsed.tokenData && parsed.tokenData.userHash;
                             if (tokenVal && uhs) {
                                 fullHeader = 'XBL3.0 x=' + uhs + ';' + tokenVal;
                                 tokenSource = 'cookie';
@@ -245,10 +242,10 @@
                         '<div style="background:#0d0d1a;padding:12px 15px;border-radius:6px;margin-bottom:15px;word-break:break-all;max-height:150px;overflow-y:auto">' +
                         '<code style="color:#e4e4e4;font-size:11px;font-family:monospace">' + fullHeader.substring(0, 60) + '...</code>' +
                         '</div>' +
-                        '<button id=_xbcb style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#107C10,#0e6b0e);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button>' +
+                        '<button id="__bl_copy__" style="width:100%;padding:10px 15px;background:linear-gradient(90deg,#107C10,#0e6b0e);border:none;border-radius:6px;color:#fff;font-weight:600;cursor:pointer;font-size:14px">Copy Token</button>' +
                         '<div style="margin-top:12px;color:#888;font-size:11px">Found via ' + tokenSource + '. Includes userhash. Paste in Backlogia settings.</div>';
 
-                    content.querySelector('#_xbcb').onclick = function() {
+                    content.querySelector('#__bl_copy__').onclick = function() {
                         navigator.clipboard.writeText(fullHeader).then(function() {
                             this.textContent = 'Copied!';
                             this.style.background = 'linear-gradient(90deg,#4caf50,#2e7d32)';
@@ -257,7 +254,7 @@
                 } else {
                     content.innerHTML =
                         '<p style="color:#f0ad4e;margin-bottom:12px">Could not find a complete token automatically.</p>' +
-                        '<p style="color:#ccc;font-size:12px">Open DevTools (F12) → Network tab, reload the page (try loading a game in Xbox Cloud Gaming), and look for a request to profile.xboxlive.com or titlehub.xboxlive.com. Copy the entire "Authorization" request header - it must start with "XBL3.0 x=" and include a semicolon before the long token.</p>';
+                        '<p style="color:#ccc;font-size:12px">Open DevTools (F12) → Network tab, reload the page (try launching a game in Xbox Cloud Gaming), and look for a request to profile.xboxlive.com or titlehub.xboxlive.com. Copy the entire Authorization request header - it must start with XBL3.0 x= and contain a semicolon before the long token.</p>';
                 }
             } catch (e) {
                 content.innerHTML = '<span style="color:#f44336">Error: ' + e.message + '</span>';
