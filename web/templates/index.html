@@ -159,6 +159,15 @@
             transform: translateY(-1px);
         }
 
+        .store-stat.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .store-stat.active .count {
+            color: #fff;
+        }
+
         .store-stat img {
             width: 22px;
             height: 22px;
@@ -1267,7 +1276,7 @@
                 <div class="stats-divider"></div>
                 <div class="store-stats">
                     {% for store, count in store_counts.items() %}
-                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %}" onclick="filterByStore('{{ store }}')">
+                    <div class="store-stat {% if store not in store_icons_header %}no-icon{% endif %} {% if current_stores == [store] %}active{% endif %}" onclick="filterByStore('{{ store }}')">
                         {% if store in store_icons_header %}
                         <img src="/static/images/{{ store_icons_header[store] }}" alt="{{ store }}" title="{{ store|capitalize }}">
                         {% else %}
@@ -1732,10 +1741,21 @@
         }
 
         function filterByStore(store) {
-            // Kliknięcie w statystykę sklepu = szybki filtr tylko po tym sklepie,
-            // resetuje pozostałe filtry (genres/search/sort zostają domyślne).
-            saveFilterPreferences([store], [], '', 'name', 'asc', false, 0, '', false);
-            window.location.href = buildUrl([store], [], '', 'name', 'asc', false, 0, '', false);
+            // Klik na statystykę sklepu = szybki filtr tylko po tym sklepie.
+            // Klik ponowny na TEN SAM (już aktywny) sklep = zdejmuje filtr, wraca do widoku wszystkich gier.
+            // Resetuje pozostałe filtry (genres/search/sort zostają domyślne).
+            const currentStores = [{% for store in current_stores %}'{{ store }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+            const isOnlyActiveFilter = currentStores.length === 1 && currentStores[0] === store;
+
+            if (isOnlyActiveFilter) {
+                // Odznacz - wyczyść filtr sklepów
+                saveFilterPreferences([], [], '', 'name', 'asc', false, 0, '', false);
+                window.location.href = buildUrl([], [], '', 'name', 'asc', false, 0, '', false);
+            } else {
+                // Zaznacz - filtruj tylko po tym sklepie
+                saveFilterPreferences([store], [], '', 'name', 'asc', false, 0, '', false);
+                window.location.href = buildUrl([store], [], '', 'name', 'asc', false, 0, '', false);
+            }
         }
         // Multi-select functionality
         let selectMode = false;
