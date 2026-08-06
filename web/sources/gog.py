@@ -4,6 +4,8 @@
 import os
 import sqlite3
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
 from ..services.settings import get_gog_settings
@@ -72,71 +74,127 @@ def get_gog_library():
     print(f"[GOG DEBUG] Using database: {db_path}")
     games = []
 
-    # SQLite database (Windows/macOS with GOG Galaxy)
+# SQLite database (Windows/macOS with GOG Galaxy)
     if db_path.suffix == ".db":
-        print(f"[GOG DEBUG] Connecting to SQLite database...")
-        try:
-            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            print(f"[GOG DEBUG] Connected successfully")
-        except Exception as e:
-            print(f"[GOG DEBUG] Connection failed: {e}")
-            return []
-        cursor = conn.cursor()
+        print("[GOG DEBUG] Creating temporary copy of GOG database...")
 
-        # Get the GamePieceType IDs dynamically
+        conn = None
+        cursor = None
+        tmpdir = None
+
         try:
-            cursor.execute("SELECT id, type FROM GamePieceTypes WHERE type IN ('title', 'meta', 'originalImages', 'summary')")
+            #
+            # Create temporary directory
+            #
+            tmpdir = Path(tempfile.mkdtemp(prefix="backlogia_gog_"))
+            print(f"[GOG DEBUG] Using temporary directory: {tmpdir}")
+
+            #
+            # Copy all databases
+            #
+            for filename in (
+                "galaxy-2.0.db",
+                "galaxy-2.0.db-wal",
+                "galaxy-2.0.db-shm",
+                "etags.db",
+                "etags-updater.db",
+                "jobs.db",
+            ):
+                src = db_path.parent / filename
+                if src.exists():
+                    shutil.copy2(src, tmpdir / filename)
+                    print(f"[GOG DEBUG] Copied {filename}")
+
+            tmp_db = tmpdir / "galaxy-2.0.db"
+
+            if not tmp_db.exists():
+                raise FileNotFoundError(tmp_db)
+
+            #
+            # Open SQLite
+            #
+            print(f"[GOG DEBUG] Connecting to temporary database: {tmp_db}")
+
+            conn = sqlite3.connect(str(tmp_db))
+            cursor = conn.cursor()
+
+            print("[GOG DEBUG] Connected successfully")
+
+            #
+            # Resolve GamePieceType IDs
+            #
+            cursor.execute("""
+                SELECT id, type
+                FROM GamePieceTypes
+                WHERE type IN ('title','meta','originalImages','summary')
+            """)
+
             type_mapping = {row[1]: row[0] for row in cursor.fetchall()}
 
-            title_id = type_mapping.get('title')
-            meta_id = type_mapping.get('meta')
-            images_id = type_mapping.get('originalImages')
-            summary_id = type_mapping.get('summary')
+            title_id = type_mapping.get("title")
+            meta_id = type_mapping.get("meta")
+            images_id = type_mapping.get("originalImages")
+            summary_id = type_mapping.get("summary")
 
             if not all([title_id, meta_id, images_id, summary_id]):
-                raise ValueError(f"Some GamePieceTypes not found. Available types: {list(type_mapping.keys())}")
-        except (sqlite3.OperationalError, ValueError) as e:
-            print(f"[GOG DEBUG] Error fetching GamePieceTypes: {e}")
-            conn.close()
-            return []
+                raise RuntimeError(
+                    f"Missing GamePieceTypes: {type_mapping}"
+                )
 
-        # Query for owned GOG games with all their metadata
-        query = f"""
-        SELECT
-            lr.releaseKey,
-            title.value as title_json,
-            meta.value as meta_json,
-            images.value as images_json,
-            summary.value as summary_json
-        FROM
-            LibraryReleases lr
-        LEFT JOIN
-            GamePieces title ON lr.releaseKey = title.releaseKey AND title.gamePieceTypeId = {title_id}
-        LEFT JOIN
-            GamePieces meta ON lr.releaseKey = meta.releaseKey AND meta.gamePieceTypeId = {meta_id}
-        LEFT JOIN
-            GamePieces images ON lr.releaseKey = images.releaseKey AND images.gamePieceTypeId = {images_id}
-        LEFT JOIN
-            GamePieces summary ON lr.releaseKey = summary.releaseKey AND summary.gamePieceTypeId = {summary_id}
-        WHERE
-            lr.releaseKey LIKE 'gog_%'
-        GROUP BY lr.releaseKey
-        """
+            #
+            # Main query
+            #
+            query = f"""
+            SELECT
+                lr.releaseKey,
+                title.value as title_json,
+                meta.value as meta_json,
+                images.value as images_json,
+                summary.value as summary_json
+            FROM LibraryReleases lr
 
-        try:
+            LEFT JOIN GamePieces title
+                ON lr.releaseKey = title.releaseKey
+                AND title.gamePieceTypeId = {title_id}
+
+            LEFT JOIN GamePieces meta
+                ON lr.releaseKey = meta.releaseKey
+                AND meta.gamePieceTypeId = {meta_id}
+
+            LEFT JOIN GamePieces images
+                ON lr.releaseKey = images.releaseKey
+                AND images.gamePieceTypeId = {images_id}
+
+            LEFT JOIN GamePieces summary
+                ON lr.releaseKey = summary.releaseKey
+                AND summary.gamePieceTypeId = {summary_id}
+
+            WHERE lr.releaseKey LIKE 'gog_%'
+
+            GROUP BY lr.releaseKey
+            """
+
             print("[GOG DEBUG] Executing query...")
+
             cursor.execute(query)
+
             rows = cursor.fetchall()
+
             print(f"[GOG DEBUG] Query returned {len(rows)} rows")
+
             for row in rows:
+
                 release_key = row[0]
+
                 title_data = _parse_json_value(row[1])
                 meta_data = _parse_json_value(row[2])
                 images_data = _parse_json_value(row[3])
                 summary_data = _parse_json_value(row[4])
 
-                # Extract product ID from release key (e.g., "gog_1207658867" -> "1207658867")
-                product_id = release_key.replace("gog_", "") if release_key else None
+                product_id = (
+                    release_key.replace("gog_", "")
+                    if release_key else None
+                )
 
                 games.append({
                     "name": title_data.get("title"),
@@ -152,16 +210,34 @@ def get_gog_library():
                     "cover_image": images_data.get("verticalCover"),
                     "background_image": images_data.get("background"),
                     "icon": images_data.get("squareIcon"),
-                    "store": "gog"
+                    "store": "gog",
                 })
-        except sqlite3.OperationalError as e:
-            print(f"Database query error: {e}")
-            # Schema might differ, show available tables
-            cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table';")
-            print("Available tables:", cursor.fetchall())
 
-        conn.close()
+        except Exception as e:
+
+            import traceback
+            
+            print(f"[GOG DEBUG] Import failed: {e}")
+            traceback.print_exc()
+
+            if cursor:
+                try:
+                    cursor.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table';"
+                    )
+                    print("Available tables:", cursor.fetchall())
+                except Exception:
+                    pass
+
+            return []
+
+        finally:
+
+            if conn:
+                conn.close()
+
+            if tmpdir:
+                shutil.rmtree(tmpdir, ignore_errors=True)
 
     # JSON file (Heroic Games Launcher on Linux)
     elif db_path.suffix == ".json":
