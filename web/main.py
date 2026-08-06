@@ -42,6 +42,8 @@ def init_database():
     # Clean up any jobs that were running when the server last stopped
     cleanup_orphaned_jobs()
 
+from .services.jobs import cleanup_orphaned_jobs
+from .services.scheduler import start_scheduler   # <-- dodaj import
 
 # Create FastAPI app
 app = FastAPI(
@@ -76,6 +78,9 @@ if ENABLE_AUTH:
 
 # Initialize database on startup
 init_database()
+
+# Start automatic sync scheduler (no-op unless AUTO_SYNC_ENABLED=true)
+start_scheduler()
 
 # Serve the service worker from root scope for PWA support
 sw_path = Path(__file__).parent / "static" / "sw.js"
