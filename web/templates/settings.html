@@ -139,6 +139,7 @@
         .section-icon.ea { background: #ff4747; }
         .section-icon.xbox { background: #107C10; }
         .section-icon.ubisoft { background: #0070ff; }
+        .section-icon.telegram { background: #26a5e4; }
         .section-icon.sync { background: #4caf50; }
 
         /* Collapsible Sections */
@@ -1582,6 +1583,50 @@
                                 <p style="margin-top: 10px; color: #888; font-size: 0.85rem;">
                                     The bookmarklet will show a progress overlay and confirm when import is complete.
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram -->
+                <div class="collapsible-section">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                        <div class="section-icon telegram">T</div>
+                        <div class="header-text">
+                            <div class="section-title">Telegram Notifications</div>
+                            <div class="section-description">Get notified when new games are synced</div>
+                        </div>
+                        <div class="collapsible-toggle">▼</div>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-content-inner">
+                            <div class="form-group">
+                                <label for="telegram_bot_token">Telegram Bot Token</label>
+                                <input type="password" id="telegram_bot_token" name="telegram_bot_token"
+                                       value="{{ settings.telegram_bot_token }}"
+                                       placeholder="123456789:AAExampleTokenFromBotFather">
+                                <div class="help-text">
+                                    Create a bot via <a href="https://t.me/BotFather" target="_blank">@BotFather</a> on Telegram, then copy the token it gives you.
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="telegram_chat_id">Telegram Chat ID</label>
+                                <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                                       value="{{ settings.telegram_chat_id }}"
+                                       placeholder="123456789">
+                                <div class="instructions-box" style="margin-top: 10px;">
+                                    <p style="margin-bottom: 8px; color: #e4e4e4;">To find your Chat ID:</p>
+                                    <ol>
+                                        <li>Send any message to your new bot on Telegram (search for it by the username BotFather gave you)</li>
+                                        <li>Open this URL in your browser, replacing <code>&lt;TOKEN&gt;</code> with your bot token:<br>
+                                            <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code>
+                                        </li>
+                                        <li>Look for <code>"chat":{"id":...}</code> in the response - that number is your Chat ID</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="help-text" style="margin-top: 8px;">
+                                Note: if <code>TELEGRAM_BOT_TOKEN</code> / <code>TELEGRAM_CHAT_ID</code> are set as environment variables (e.g. in <code>.env</code>), those take priority over the values saved here.
                             </div>
                         </div>
                     </div>

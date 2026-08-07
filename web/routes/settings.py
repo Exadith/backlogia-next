@@ -27,7 +27,8 @@ def settings_page(
     from ..services.settings import (
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN
+        EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN,
+        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     )
     from ..sources.local import discover_local_game_paths
 
@@ -62,7 +63,9 @@ def settings_page(
             "battlenet_session_cookie": get_setting(BATTLENET_SESSION_COOKIE, ""),
             "gog_db_path": get_setting(GOG_DB_PATH, ""),
             "ea_bearer_token": get_setting(EA_BEARER_TOKEN, ""),
-            "xbox_xsts_token": get_setting(XBOX_XSTS_TOKEN, ""),   # <-- dodane
+            "xbox_xsts_token": get_setting(XBOX_XSTS_TOKEN, ""),
+            "telegram_bot_token": get_setting(TELEGRAM_BOT_TOKEN, ""),
+            "telegram_chat_id": get_setting(TELEGRAM_CHAT_ID, ""),
             "local_games_paths": local_games_paths_value,
     }
     success_flag = success == "1"
@@ -97,14 +100,17 @@ def save_settings(
     battlenet_session_cookie: str = Form(default=""),
     gog_db_path: str = Form(default=""),
     ea_bearer_token: str = Form(default=""),
-    xbox_xsts_token: str = Form(default=""),   # <-- dodane
+    xbox_xsts_token: str = Form(default=""),
+    telegram_bot_token: str = Form(default=""),
+    telegram_chat_id: str = Form(default=""),
     local_games_paths: str = Form(default=""),
 ):
     """Save settings from the form."""
     from ..services.settings import (
         set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
-        EA_BEARER_TOKEN, XBOX_XSTS_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS
+        EA_BEARER_TOKEN, XBOX_XSTS_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS,
+        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
     )
 
     is_docker = os.path.exists("/.dockerenv")
@@ -119,7 +125,9 @@ def save_settings(
     set_setting(BATTLENET_SESSION_COOKIE, battlenet_session_cookie.strip())
     set_setting(GOG_DB_PATH, gog_db_path.strip())
     set_setting(EA_BEARER_TOKEN, ea_bearer_token.strip())
-    set_setting(XBOX_XSTS_TOKEN, xbox_xsts_token.strip())   # <-- dodane
+    set_setting(XBOX_XSTS_TOKEN, xbox_xsts_token.strip())
+    set_setting(TELEGRAM_BOT_TOKEN, telegram_bot_token.strip())
+    set_setting(TELEGRAM_CHAT_ID, telegram_chat_id.strip())
 
     if not is_docker:
         set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())
