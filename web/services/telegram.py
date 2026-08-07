@@ -20,8 +20,7 @@ def send_message(text: str) -> bool:
         json={
             "chat_id": chat_id,
             "text": text,
-            "parse_mode": "Markdown",
-            "disable_web_page_preview": True,
+            "parse_mode": "HTML",
         },
         timeout=15,
     )

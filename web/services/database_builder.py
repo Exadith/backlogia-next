@@ -118,19 +118,21 @@ def import_steam_games(conn):
     print("Importing Steam library...")
     cursor = conn.cursor()
 
-
     try:
         from ..sources.steam import get_steam_library
 
         games = get_steam_library(fetch_reviews=True, max_workers=5)
         if not games:
             print("  No Steam games found or not authenticated")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
-
                 appid = game.get("appid")
 
                 if game_exists(cursor, "steam", appid):
@@ -155,7 +157,6 @@ def import_steam_games(conn):
                         name,
                         store,
                         store_id,
-                        steam_app_id,
                         cover_image,
                         background_image,
                         icon,
@@ -163,12 +164,11 @@ def import_steam_games(conn):
                         critics_score,
                         extra_data,
                         updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     game.get("name"),
                     "steam",
                     str(appid) if appid else None,   # store_id
-                    str(appid) if appid else None,   # steam_app_id
                     cover_image,
                     background_image,
                     game.get("icon_url"),
@@ -179,17 +179,25 @@ def import_steam_games(conn):
                 ))
 
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
 
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Steam games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
 
     except Exception as e:
         print(f"  Steam import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_epic_games(conn):
@@ -203,9 +211,13 @@ def import_epic_games(conn):
         games = get_epic_library_legendary()
         if not games:
             print("  No Epic games found or not authenticated")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -236,15 +248,23 @@ def import_epic_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Epic games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except Exception as e:
         print(f"  Epic import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_gog_games(conn):
@@ -258,9 +278,13 @@ def import_gog_games(conn):
         games = get_gog_library()
         if not games:
             print("  No GOG games found or database not accessible")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -309,15 +333,23 @@ def import_gog_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} GOG games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except Exception as e:
         print(f"  GOG import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_itch_games(conn):
@@ -333,14 +365,21 @@ def import_itch_games(conn):
             print("  itch.io not configured or not authenticated")
             print("  Set your itch.io API key in the Settings page")
             print("  (get key at: https://itch.io/user/settings/api-keys)")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         games = get_owned_games(token)
         if not games:
             print("  No itch.io games found")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -374,18 +413,29 @@ def import_itch_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("title"):
+                    added_games.append(game.get("title"))
             except Exception as e:
                 print(f"  Error importing {game.get('title')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} itch.io games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  itch.io module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  itch.io import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_humble_games(conn):
@@ -400,9 +450,13 @@ def import_humble_games(conn):
         if not games:
             print("  No Humble Bundle games found or not authenticated")
             print("  Set your Humble Bundle session cookie in Settings")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -427,18 +481,29 @@ def import_humble_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("human_name"):
+                    added_games.append(game.get("human_name"))
             except Exception as e:
                 print(f"  Error importing {game.get('human_name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Humble Bundle games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  Humble Bundle module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  Humble Bundle import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_battlenet_games(conn):
@@ -453,9 +518,13 @@ def import_battlenet_games(conn):
         if not games:
             print("  No Battle.net games found or not authenticated")
             print("  Set your Battle.net session cookie in Settings")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
                 if game_exists(cursor, "battlenet", game.get("title_id")):
@@ -474,18 +543,29 @@ def import_battlenet_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Battle.net games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  Battle.net module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  Battle.net import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_ea_games(conn):
@@ -500,9 +580,13 @@ def import_ea_games(conn):
         if not games:
             print("  No EA games found or not authenticated")
             print("  Get a new EA bearer token using the script in Settings")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -530,18 +614,29 @@ def import_ea_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} EA games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  EA module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  EA import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_amazon_games(conn):
@@ -556,9 +651,13 @@ def import_amazon_games(conn):
         if not games:
             print("  No Amazon games found or not configured")
             print("  Set up Amazon Games in Settings (local database or API token)")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
                 if game_exists(cursor, "amazon", game.get("product_id")):
@@ -584,18 +683,29 @@ def import_amazon_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Amazon games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  Amazon Games module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  Amazon Games import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_xbox_games(conn):
@@ -611,9 +721,13 @@ def import_xbox_games(conn):
             print("  No Xbox games found or not configured")
             print("  Add your XSTS token in Settings to import owned games")
             print("  Game Pass catalog will be imported regardless")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -649,18 +763,29 @@ def import_xbox_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} Xbox games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  Xbox module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  Xbox import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def import_local_games(conn):
@@ -675,9 +800,13 @@ def import_local_games(conn):
         if not games:
             print("  No local games found or not configured")
             print("  Set LOCAL_GAMES_PATHS in Settings (comma-separated folder paths)")
-            return 0
+            return {
+                "count": 0,
+                "added_games": [],
+            }
 
         count = 0
+        added_games = []
         for game in games:
             try:
 
@@ -712,18 +841,29 @@ def import_local_games(conn):
                     datetime.now().isoformat()
                 ))
                 count += 1
+                if game.get("name"):
+                    added_games.append(game.get("name"))
             except Exception as e:
                 print(f"  Error importing {game.get('name')}: {e}")
 
         conn.commit()
         print(f"  Imported {count} local games")
-        return count
+        return {
+            "count": count,
+            "added_games": added_games,
+        }
     except ImportError:
         print("  Local games module not available")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
     except Exception as e:
         print(f"  Local games import error: {e}")
-        return 0
+        return {
+            "count": 0,
+            "added_games": [],
+        }
 
 
 def add_average_rating_column(conn):
