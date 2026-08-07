@@ -14,6 +14,7 @@ from .jobs import (
     JobType, create_job, update_job_progress, complete_job, fail_job,
     run_job_async, get_active_jobs
 )
+from .notifications import notify_new_games
 
 # --- Configuration (all via environment variables, all optional) ----------
 
@@ -78,6 +79,19 @@ def _run_store_sync():
     store_label = "all stores" if AUTO_SYNC_STORE == "all" else AUTO_SYNC_STORE
     job_id = create_job(JobType.STORE_SYNC, f"[Auto-sync] Starting {store_label} sync...")
 
+    STORE_NAMES = {
+        "steam": "Steam",
+        "epic": "Epic Games",
+        "gog": "GOG",
+        "itch": "itch.io",
+        "humble": "Humble Bundle",
+        "amazon": "Amazon Games",
+        "ea": "EA App",
+        "battlenet": "Battle.net",
+        "xbox": "Xbox",
+        "local": "Local Games",
+    }
+
     def run(job_id):
         try:
             create_database()
@@ -95,19 +109,42 @@ def _run_store_sync():
             results = {}
             total = len(targets)
             for i, (name, func) in enumerate(targets, 1):
-                update_job_progress(job_id, i, total, f"Syncing {name.capitalize()}...")
+                update_job_progress(
+                    job_id,
+                    i,
+                    total,
+                    f"Syncing {STORE_NAMES.get(name, name)}..."
+                )
                 try:
-                    results[name] = func(conn)
+                    res = func(conn)
+                    results[name] = res
+                    
+                    if isinstance(res, dict):
+                        try:
+                            notify_new_games(
+                                STORE_NAMES.get(name, name),
+                                res["added_games"],
+                            )
+                        except Exception as notify_err:
+                            print(
+                                f"[scheduler] Error sending Telegram notification for {name}: {notify_err}"
+                            )
+
                 except Exception as e:
                     results[name] = f"Error: {e}"
 
             conn.close()
 
-            total_games = sum(v for v in results.values() if isinstance(v, int))
+            # Podsumowanie liczby gier na potrzeby logowania i statusu zadania
+            summary_results = {
+                k: (v.get("count", 0) if isinstance(v, dict) else v)
+                for k, v in results.items()
+            }
+            total_games = sum(v for v in summary_results.values() if isinstance(v, int))
             message = f"[Auto-sync] Synced {total_games} games: " + ", ".join(
-                f"{s.capitalize()}: {c}" for s, c in results.items()
+                f"{s.capitalize()}: {c}" for s, c in summary_results.items()
             )
-            complete_job(job_id, json.dumps(results), message)
+            complete_job(job_id, json.dumps(summary_results), message)
         except Exception as e:
             fail_job(job_id, str(e))
 
@@ -139,7 +176,6 @@ def _run_igdb_sync():
                 f"[Auto-sync] IGDB sync complete: {matched} matched, {failed} failed"
             )
         except ValueError as e:
-            # Credentials not configured - fail quietly, no need for a scary traceback
             fail_job(job_id, f"IGDB not configured: {e}")
         except Exception as e:
             fail_job(job_id, str(e))
@@ -273,8 +309,6 @@ def _loop():
     while True:
         try:
             _run_store_sync()
-            # Wait for the store sync to actually finish before chaining
-            # metadata syncs, so they see the freshly imported games.
             _wait_for_job_type_to_finish(JobType.STORE_SYNC.value)
 
             if AUTO_SYNC_IGDB:
