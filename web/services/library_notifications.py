@@ -5,7 +5,6 @@
 import os
 import sqlite3
 from datetime import datetime
-from ..services.settings import get_telegram_settings
 
 from ..config import DATABASE_PATH
 
@@ -22,11 +21,6 @@ EA_BEARER_TOKEN = "ea_bearer_token"
 XBOX_XSTS_TOKEN = "xbox_xsts_token"
 LOCAL_GAMES_PATHS = "local_games_paths"
 IGDB_MATCH_THRESHOLD = "igdb_match_threshold"
-TELEGRAM_BOT_TOKEN = "telegram_bot_token"
-TELEGRAM_CHAT_ID = "telegram_chat_id"
-
-NOTIFY_NEW_GAMES = "notify_new_games"
-NOTIFY_REMOVED_GAMES = "notify_removed_games"
 
 # Map setting keys to environment variable names
 ENV_VAR_MAP = {
@@ -42,20 +36,8 @@ ENV_VAR_MAP = {
     XBOX_XSTS_TOKEN: "XBOX_XSTS_TOKEN",
     LOCAL_GAMES_PATHS: "LOCAL_GAMES_PATHS",
     IGDB_MATCH_THRESHOLD: "IGDB_MATCH_THRESHOLD",
-
-    TELEGRAM_BOT_TOKEN: "TELEGRAM_BOT_TOKEN",
-    TELEGRAM_CHAT_ID: "TELEGRAM_CHAT_ID",
-    
-    NOTIFY_NEW_GAMES: "NOTIFY_NEW_GAMES",
-    NOTIFY_REMOVED_GAMES: "NOTIFY_REMOVED_GAMES",
 }
 
-cfg = get_telegram_settings()
-
-cfg["bot_token"]
-cfg["chat_id"]
-cfg["notify_new_games"]
-cfg["notify_removed_games"]
 
 def _ensure_settings_table(conn):
     """Ensure the settings table exists."""
@@ -202,11 +184,4 @@ def get_local_games_settings():
     """Get local games folder settings."""
     return {
         "paths": get_setting(LOCAL_GAMES_PATHS),
-    }
-
-def get_telegram_settings():
-    """Get Telegram settings."""
-    return {
-        "bot_token": get_setting(TELEGRAM_BOT_TOKEN),
-        "chat_id": get_setting(TELEGRAM_CHAT_ID),
     }
