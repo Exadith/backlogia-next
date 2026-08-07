@@ -5,7 +5,6 @@
 import os
 import sqlite3
 from datetime import datetime
-from ..services.settings import get_telegram_settings
 
 from ..config import DATABASE_PATH
 
@@ -50,12 +49,6 @@ ENV_VAR_MAP = {
     NOTIFY_REMOVED_GAMES: "NOTIFY_REMOVED_GAMES",
 }
 
-cfg = get_telegram_settings()
-
-cfg["bot_token"]
-cfg["chat_id"]
-cfg["notify_new_games"]
-cfg["notify_removed_games"]
 
 def _ensure_settings_table(conn):
     """Ensure the settings table exists."""
@@ -209,4 +202,10 @@ def get_telegram_settings():
     return {
         "bot_token": get_setting(TELEGRAM_BOT_TOKEN),
         "chat_id": get_setting(TELEGRAM_CHAT_ID),
+        "notify_new_games": (
+            str(get_setting(NOTIFY_NEW_GAMES, "true")).lower() == "true"
+        ),
+        "notify_removed_games": (
+            str(get_setting(NOTIFY_REMOVED_GAMES, "false")).lower() == "true"
+        ),
     }
