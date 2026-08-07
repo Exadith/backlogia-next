@@ -290,6 +290,11 @@ class IGDBClient:
             r"™",
             r"®",
             r"©",
+            # Amazon appends the claim channel to Luna/Prime Gaming titles
+            # (e.g. "Ashworld - Amazon Luna") - strip it so matching sees
+            # the real game title instead of a store-specific SKU suffix.
+            r"\s*-\s*Amazon\s+Luna$",
+            r"\s*-\s*Amazon\s+Prime$",
         ]
 
         clean = name
@@ -610,9 +615,14 @@ def sync_games(conn, client, limit=None, force=False, progress_callback=None):
 
 
                 if best_match is None:
+                    # Score against the same cleaned name used for the search
+                    # itself - otherwise a store-specific suffix like
+                    # "- Amazon Luna" drags the score down even when the
+                    # search already found the right game.
+                    clean_name_for_scoring = client._clean_game_name(name)
                     for result in results:
                         score = calculate_match_score(
-                            name,
+                            clean_name_for_scoring,
                             result,
                             game_release_year,
                         )

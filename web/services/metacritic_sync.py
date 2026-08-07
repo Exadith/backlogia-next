@@ -250,6 +250,11 @@ class MetacriticClient:
             r"\s*Deluxe\s*Edition$",
             r"\s*Gold\s*Edition$",
             r"\s*GOTY\s*Edition$",
+            # Amazon appends the claim channel to Luna/Prime Gaming titles
+            # (e.g. "Ashworld - Amazon Luna") - strip it so matching sees
+            # the real game title instead of a store-specific SKU suffix.
+            r"\s*-\s*Amazon\s+Luna$",
+            r"\s*-\s*Amazon\s+Prime$",
         ]
 
         clean = name
@@ -327,12 +332,17 @@ def _process_single_game(client, game_id, name):
         if not results:
             return (game_id, False, "No results")
 
+        # Score against the same cleaned name used for the search itself -
+        # otherwise a store-specific suffix like "- Amazon Luna" drags the
+        # score down even when the search already found the right game.
+        clean_name = client._clean_game_name(name)
+
         # Find best match
         best_match = None
         best_score = 0
 
         for result in results:
-            score = calculate_match_score(name, result)
+            score = calculate_match_score(clean_name, result)
             if score > best_score:
                 best_score = score
                 best_match = result

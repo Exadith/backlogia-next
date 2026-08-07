@@ -172,6 +172,11 @@ def add_steamgriddb_columns(conn):
 def normalize_name(name: str) -> str:
     # usuń znaki towarowe
     name = re.sub(r"[®™©]", "", name)
+    # Amazon appends the claim channel to Luna/Prime Gaming titles
+    # (e.g. "Ashworld - Amazon Luna") - strip it so search hits the
+    # real game title instead of a store-specific SKU suffix.
+    name = re.sub(r"\s*-\s*Amazon\s+Luna$", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"\s*-\s*Amazon\s+Prime$", "", name, flags=re.IGNORECASE)
     # zamień wielokrotne spacje na jedną
     name = re.sub(r"\s+", " ", name)
     return name.strip()
