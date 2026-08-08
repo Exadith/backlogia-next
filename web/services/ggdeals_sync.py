@@ -16,8 +16,8 @@ from .settings import GGDEALS_TOKEN, get_setting
 
 
 GGDEALS_IMPORT_URL = "https://api.gg.deals/playnite/collection/import/"
-REQUEST_TIMEOUT = 60
-BATCH_SIZE = 500
+REQUEST_TIMEOUT = 180
+BATCH_SIZE = 10
 _GAME_UUID_NAMESPACE = uuid.UUID("7d20ea35-07c8-4466-b5dc-714a1573f4b8")
 
 # Values are the launcher names accepted by GG.deals' Playnite import API.
@@ -160,6 +160,8 @@ def sync_pending_games(conn: sqlite3.Connection, force: bool = False, progress_c
     if not games:
         return {"processed": 0, "added": 0, "skipped": 0, "miss": 0, "ignored": 0, "error": 0}
 
+    print(f"[GG.deals] Found {len(games)} games to synchronize")
+
     totals = {"processed": len(games), "added": 0, "skipped": 0, "miss": 0, "ignored": 0, "error": 0}
     for offset in range(0, len(games), BATCH_SIZE):
         batch = games[offset:offset + BATCH_SIZE]
@@ -170,13 +172,34 @@ def sync_pending_games(conn: sqlite3.Connection, force: bool = False, progress_c
             games_by_uuid[game_uuid.lower()] = game["id"]
             payloads.append(payload)
 
-        response = requests.post(
-            GGDEALS_IMPORT_URL,
-            # The outer request uses the Playnite client's snake_case JSON
-            # serializer; the JSON string in `data` preserves game fields.
-            json={"version": "v1", "token": token, "data": json.dumps(payloads, ensure_ascii=False)},
-            timeout=REQUEST_TIMEOUT,
+        print(
+            f"[GG.deals] Sending batch "
+            f"{offset // BATCH_SIZE + 1}/"
+            f"{(len(games) - 1) // BATCH_SIZE + 1} "
+            f"({len(batch)} games)"
         )
+
+        for attempt in range(1, 4):
+            try:
+                response = requests.post(
+                    GGDEALS_IMPORT_URL,
+                    json={
+                        "version": "v1",
+                        "token": token,
+                        "data": json.dumps(payloads, ensure_ascii=False),
+                    },
+                    timeout=REQUEST_TIMEOUT,
+                )
+        
+                print(f"[GG.deals] HTTP {response.status_code}")
+                break
+        
+            except requests.Timeout:
+                print(f"[GG.deals] Request timed out (attempt {attempt}/3)")
+        
+                if attempt == 3:
+                    raise
+
         if response.status_code == 401:
             raise ValueError("GG.deals rejected the configured token")
         response.raise_for_status()
