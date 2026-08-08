@@ -16,6 +16,22 @@ from ..services.notifications import notify_new_games
 
 router = APIRouter(tags=["Sync"])
 
+
+def sync_ggdeals_collection(conn, progress_callback=None):
+    """Export pending owned games if the optional GG.deals token is configured."""
+    from ..services.ggdeals_sync import is_configured, sync_pending_games
+
+    if not is_configured():
+        return None
+    try:
+        return sync_pending_games(conn, progress_callback=progress_callback)
+    except Exception as e:
+        # Importing stores remains successful when GG.deals is temporarily
+        # unavailable; pending games will be retried during the next sync.
+        print(f"GG.deals sync error: {e}")
+        return {"error": str(e)}
+
+
 def run_store_import(conn, results, key, display_name, importer):
   result = importer(conn)
 
@@ -73,6 +89,10 @@ def sync_store(store: StoreType):
         elif store in store_map:
             key, display_name, importer = store_map[store]
             run_store_import(conn, results, key, display_name, importer)
+
+        ggdeals_result = sync_ggdeals_collection(conn)
+        if ggdeals_result is not None:
+            results["ggdeals"] = ggdeals_result
 
         conn.close()
 
@@ -213,6 +233,15 @@ def sync_store_async(store: StoreType):
                     run_store_import(conn, results, key, display_name, importer)
                 except Exception as e:
                     results[key] = f"Error: {str(e)}"
+
+            ggdeals_result = sync_ggdeals_collection(
+                conn,
+                progress_callback=lambda current, total, message: update_job_progress(
+                    job_id, current, total, message
+                ),
+            )
+            if ggdeals_result is not None:
+                results["ggdeals"] = ggdeals_result
 
             conn.close()
 
@@ -412,6 +441,41 @@ def sync_protondb_async(mode: str):
     run_job_async(job_id, run_sync)
 
     return {"success": True, "job_id": job_id, "message": f"Started ProtonDB sync job ({mode_text})"}
+
+
+@router.post("/api/sync/ggdeals/async")
+def sync_ggdeals_async():
+    """Export pending owned games to the GG.deals collection."""
+    from ..services.ggdeals_sync import is_configured, sync_pending_games
+
+    if not is_configured():
+        raise HTTPException(status_code=400, detail="GG.deals token is not configured")
+
+    job_id = create_job(JobType.GGDEALS_SYNC, "Starting GG.deals collection sync...")
+
+    def run_sync(job_id: str):
+        conn = None
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            result = sync_pending_games(
+                conn,
+                progress_callback=lambda current, total, message: update_job_progress(
+                    job_id, current, total, message
+                ),
+            )
+            message = (
+                f"GG.deals sync complete: {result['added']} added, "
+                f"{result['skipped']} already owned, {result['miss']} not matched"
+            )
+            complete_job(job_id, json.dumps(result), message)
+        except Exception as e:
+            fail_job(job_id, str(e))
+        finally:
+            if conn is not None:
+                conn.close()
+
+    run_job_async(job_id, run_sync)
+    return {"success": True, "job_id": job_id, "message": "Started GG.deals collection sync"}
 
 
 class UbisoftGame(BaseModel):

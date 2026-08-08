@@ -14,6 +14,7 @@ from .config import DATABASE_PATH, ENABLE_AUTH, SECRET_KEY
 from .database import ensure_extra_columns, ensure_collections_tables
 from .services.database_builder import create_database
 from .services.igdb_sync import add_igdb_columns
+from .services.ggdeals_sync import add_ggdeals_columns
 from .services.jobs import cleanup_orphaned_jobs
 
 # Import routers
@@ -38,6 +39,7 @@ def init_database():
 
     conn = sqlite3.connect(DATABASE_PATH)
     add_igdb_columns(conn)
+    add_ggdeals_columns(conn)
     conn.close()
 
     # Clean up any jobs that were running when the server last stopped

@@ -28,7 +28,7 @@ def settings_page(
         get_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
         EA_BEARER_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS, XBOX_XSTS_TOKEN,
-        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GGDEALS_TOKEN
     )
     from ..sources.local import discover_local_game_paths
 
@@ -66,6 +66,7 @@ def settings_page(
             "xbox_xsts_token": get_setting(XBOX_XSTS_TOKEN, ""),
             "telegram_bot_token": get_setting(TELEGRAM_BOT_TOKEN, ""),
             "telegram_chat_id": get_setting(TELEGRAM_CHAT_ID, ""),
+            "ggdeals_token_configured": bool(get_setting(GGDEALS_TOKEN, "")),
             "local_games_paths": local_games_paths_value,
     }
     success_flag = success == "1"
@@ -103,14 +104,16 @@ def save_settings(
     xbox_xsts_token: str = Form(default=""),
     telegram_bot_token: str = Form(default=""),
     telegram_chat_id: str = Form(default=""),
+    ggdeals_token: str = Form(default=""),
+    clear_ggdeals_token: bool = Form(default=False),
     local_games_paths: str = Form(default=""),
 ):
     """Save settings from the form."""
     from ..services.settings import (
-        set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
+        delete_setting, set_setting, STEAM_ID, STEAM_API_KEY, IGDB_CLIENT_ID, IGDB_CLIENT_SECRET,
         ITCH_API_KEY, HUMBLE_SESSION_COOKIE, BATTLENET_SESSION_COOKIE, GOG_DB_PATH,
         EA_BEARER_TOKEN, XBOX_XSTS_TOKEN, IGDB_MATCH_THRESHOLD, LOCAL_GAMES_PATHS,
-        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+        TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GGDEALS_TOKEN
     )
 
     is_docker = os.path.exists("/.dockerenv")
@@ -128,6 +131,12 @@ def save_settings(
     set_setting(XBOX_XSTS_TOKEN, xbox_xsts_token.strip())
     set_setting(TELEGRAM_BOT_TOKEN, telegram_bot_token.strip())
     set_setting(TELEGRAM_CHAT_ID, telegram_chat_id.strip())
+    # Do not clear an existing token when the form is saved for unrelated
+    # settings. Entering a new non-empty value replaces it.
+    if clear_ggdeals_token:
+        delete_setting(GGDEALS_TOKEN)
+    elif ggdeals_token.strip():
+        set_setting(GGDEALS_TOKEN, ggdeals_token.strip())
 
     if not is_docker:
         set_setting(LOCAL_GAMES_PATHS, local_games_paths.strip())

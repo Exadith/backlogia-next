@@ -133,6 +133,21 @@ def _run_store_sync():
                 except Exception as e:
                     results[name] = f"Error: {e}"
 
+            # Keep GG.deals in step with the local library. The helper is a
+            # no-op until the user configures a GGDEALS_TOKEN.
+            from .ggdeals_sync import is_configured, sync_pending_games
+            if is_configured():
+                try:
+                    results["ggdeals"] = sync_pending_games(
+                        conn,
+                        progress_callback=lambda current, total, message: update_job_progress(
+                            job_id, current, total, message
+                        ),
+                    )
+                except Exception as e:
+                    print(f"[scheduler] GG.deals sync error: {e}")
+                    results["ggdeals"] = {"error": str(e)}
+
             conn.close()
 
             # Podsumowanie liczby gier na potrzeby logowania i statusu zadania

@@ -23,6 +23,7 @@ LOCAL_GAMES_PATHS = "local_games_paths"
 IGDB_MATCH_THRESHOLD = "igdb_match_threshold"
 TELEGRAM_BOT_TOKEN = "telegram_bot_token"
 TELEGRAM_CHAT_ID = "telegram_chat_id"
+GGDEALS_TOKEN = "ggdeals_token"
 
 NOTIFY_NEW_GAMES = "notify_new_games"
 NOTIFY_REMOVED_GAMES = "notify_removed_games"
@@ -44,6 +45,7 @@ ENV_VAR_MAP = {
 
     TELEGRAM_BOT_TOKEN: "TELEGRAM_BOT_TOKEN",
     TELEGRAM_CHAT_ID: "TELEGRAM_CHAT_ID",
+    GGDEALS_TOKEN: "GGDEALS_TOKEN",
     
     NOTIFY_NEW_GAMES: "NOTIFY_NEW_GAMES",
     NOTIFY_REMOVED_GAMES: "NOTIFY_REMOVED_GAMES",
